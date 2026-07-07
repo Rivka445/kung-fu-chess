@@ -83,6 +83,13 @@ class ChessBoard:
     def is_on_path(self, source_row, source_col, target_row, target_col, check_row, check_col):
         return (check_row, check_col) in self.get_path(source_row, source_col, target_row, target_col)
 
+    def promote_pawn(self, row, col):
+        piece = self.matrix[row][col]
+        if piece[1] == "P":
+            last_row = 0 if piece[0] == "w" else len(self.matrix) - 1
+            if row == last_row:
+                self.matrix[row][col] = piece[0] + "Q"
+
     def remove_piece(self, row, col):
         self.matrix[row][col] = "."
 

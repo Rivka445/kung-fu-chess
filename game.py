@@ -64,7 +64,10 @@ class Game:
 
         if piece[1] == "P":
             target_piece = self.board.get_piece(target_row, target_col)
-            if is_legal_pawn_move(piece, source_row, source_col, target_row, target_col, target_piece):
+            board_rows = len(self.board.matrix)
+            if is_legal_pawn_move(piece, source_row, source_col, target_row, target_col, target_piece, board_rows):
+                if abs(target_row - source_row) == 2 and self.board.has_blockers(source_row, source_col, target_row, target_col):
+                    return
                 self.pending_moves.append(PendingMove(source, target, self.current_time + MOVE_DURATION))
             return
         
@@ -107,6 +110,7 @@ class Game:
             self.board.move_piece(*move.source, *move.target)
             if target_piece in ("wK", "bK"):
                 self.game_over = True
+            self.board.promote_pawn(*move.target)
 
         self.pending_moves = pending
 
