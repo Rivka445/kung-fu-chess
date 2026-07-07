@@ -1,3 +1,4 @@
+from pieces import is_legal_move
 CELL_SIZE = 100
 
 class Game:
@@ -46,8 +47,10 @@ class Game:
         source_row, source_col = source
         target_row, target_col = target
 
-        self.board.move_piece(source_row, source_col, target_row, target_col)
+        piece = self.board.get_piece(source_row, source_col)
 
+        if is_legal_move(piece, source_row, source_col, target_row, target_col):
+            self.board.move_piece(source_row, source_col, target_row, target_col)
     def handle_wait(self, ms):
         self.current_time += ms
 
