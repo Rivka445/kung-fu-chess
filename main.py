@@ -1,5 +1,6 @@
 import sys
 from board import ChessBoard
+from board_parser import parse_row
 from game import Game
 from commands import execute_command
 from config import CELL_SIZE
@@ -28,7 +29,8 @@ def main():
             
         if in_board_section:
             try:
-                board.add_row(line_str)
+                row = parse_row(line_str, board.expected_cols)
+                board.add_parsed_row(row)
             except ValueError as e:
                 print(f"ERROR {e}")
                 sys.exit(0)

@@ -1,5 +1,4 @@
-from piece import Piece, PieceType, Color, VALID_COLORS, VALID_PIECE_TYPES
-from rules import BLOCKABLE_PIECES
+from piece import Piece, PieceType, Color
 from position import Position
 
 
@@ -8,26 +7,9 @@ class ChessBoard:
         self.matrix = []
         self.expected_cols = None
 
-    def add_row(self, line_str: str):
-        tokens = line_str.split()
-
-        if not tokens:
-            raise ValueError("EMPTY_ROW")
-
+    def add_parsed_row(self, row: list):
         if self.expected_cols is None:
-            self.expected_cols = len(tokens)
-        elif len(tokens) != self.expected_cols:
-            raise ValueError("ROW_WIDTH_MISMATCH")
-
-        row = []
-        for token in tokens:
-            if token == ".":
-                row.append(None)
-                continue
-            if len(token) != 2 or token[0] not in VALID_COLORS or token[1] not in VALID_PIECE_TYPES:
-                raise ValueError("UNKNOWN_TOKEN")
-            row.append(Piece.from_str(token))
-
+            self.expected_cols = len(row)
         self.matrix.append(row)
 
     def is_inside(self, pos: Position) -> bool:
