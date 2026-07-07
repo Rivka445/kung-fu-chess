@@ -8,33 +8,52 @@ class ChessBoard:
         self.expected_cols = None
 
     def add_row(self, line_str: str):
-        """
-        Parses a single row from the board text section, validates dimensions and tokens.
-        """
         tokens = line_str.split()
         
-        # Enforce exact rectangular column matching
+        if len(tokens) == 0:
+            print("ERROR EMPTY_ROW")
+            sys.exit(0)
+
         if self.expected_cols is None:
             self.expected_cols = len(tokens)
         elif len(tokens) != self.expected_cols:
             print("ERROR ROW_WIDTH_MISMATCH")
             sys.exit(0)
             
-        # Validate individual tokens
         for token in tokens:
             if token == ".":
                 continue
             
-            # Ensure token format is exactly 2 characters (Color + Type)
-            if len(token) != 2 or token[0] not in VALID_COLORS or token[1] not in VALID_PIECE_TYPES:
+            if len(token) != 2:
                 print("ERROR UNKNOWN_TOKEN")
                 sys.exit(0)
-                
+            
+            color = token[0]
+            piece_type = token[1]
+
+            if color not in VALID_COLORS or piece_type not in VALID_PIECE_TYPES:
+                print("ERROR UNKNOWN_TOKEN")
+                sys.exit(0)
+  
         self.matrix.append(tokens)
 
+
+    def is_inside(self, row, col):
+        return (
+            row >= 0 and
+            col >= 0 and
+            row < len(self.matrix) and
+            col < self.expected_cols
+        )
+
+    def get_piece(self, row, col):
+        return self.matrix[row][col]
+
+    def move_piece(self, source_row, source_col, target_row, target_col):
+        piece = self.matrix[source_row][source_col]
+        self.matrix[target_row][target_col] = piece
+        self.matrix[source_row][source_col] = "."
+
     def print_board(self):
-        """
-        Prints the current state of the board in canonical text form.
-        """
         for row in self.matrix:
             print(" ".join(row))

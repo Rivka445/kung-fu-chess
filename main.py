@@ -1,32 +1,36 @@
 # main.py
 import sys
 from board import ChessBoard
+from game import Game
+from commands import execute_command
 
 def main():
-    chess_game = ChessBoard()
+    board = ChessBoard()
+    game = Game(board)
+
     in_board_section = False
+    in_commands_section = False
 
     for line in sys.stdin:
         line_str = line.strip()
         if not line_str:
             continue
             
-        # Context-switching triggers
         if line_str == "Board:":
             in_board_section = True
+            in_commands_section = False
             continue
             
         if line_str == "Commands:":
             in_board_section = False
+            in_commands_section = True
             continue
             
-        if line_str == "print board":
-            chess_game.print_board()
-            continue
-
-        # Append data to the board when within the target block
         if in_board_section:
-            chess_game.add_row(line_str)
+            board.add_row(line_str)
+        
+        elif in_commands_section:
+            execute_command(line_str, game)
 
 if __name__ == "__main__":
     main()
