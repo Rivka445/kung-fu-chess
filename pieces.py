@@ -1,5 +1,6 @@
 VALID_PIECE_TYPES = {'K', 'Q', 'R', 'B', 'N', 'P'}
 VALID_COLORS = {'w', 'b'}
+BLOCKABLE_PIECES = {'R', 'B', 'Q'}
 
 
 def king_move(dr, dc):

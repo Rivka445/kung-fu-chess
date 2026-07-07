@@ -53,19 +53,10 @@ class ChessBoard:
         return self.same_color(source_piece, target_piece)
     
     def has_blockers(self, source_row, source_col, target_row, target_col):
-        row_step = self.get_step(target_row - source_row)
-        col_step = self.get_step(target_col - source_col)
-
-        current_row = source_row + row_step
-        current_col = source_col + col_step
-
-        while current_row != target_row or current_col != target_col:
-            if self.get_piece(current_row, current_col) != ".":
+        path = self.get_path(source_row, source_col, target_row, target_col)
+        for row, col in path[:-1]:
+            if self.get_piece(row, col) != ".":
                 return True
-
-            current_row += row_step
-            current_col += col_step
-
         return False
 
     def get_step(self, diff):
@@ -74,6 +65,26 @@ class ChessBoard:
         if diff < 0:
             return -1
         return 0
+
+    def get_path(self, source_row, source_col, target_row, target_col):
+        row_step = self.get_step(target_row - source_row)
+        col_step = self.get_step(target_col - source_col)
+        path = []
+        current_row = source_row + row_step
+        current_col = source_col + col_step
+        while True:
+            path.append((current_row, current_col))
+            if current_row == target_row and current_col == target_col:
+                break
+            current_row += row_step
+            current_col += col_step
+        return path
+
+    def is_on_path(self, source_row, source_col, target_row, target_col, check_row, check_col):
+        return (check_row, check_col) in self.get_path(source_row, source_col, target_row, target_col)
+
+    def remove_piece(self, row, col):
+        self.matrix[row][col] = "."
 
     def move_piece(self, source_row, source_col, target_row, target_col):
         piece = self.matrix[source_row][source_col]

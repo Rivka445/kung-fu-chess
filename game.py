@@ -1,5 +1,8 @@
-from pieces import is_legal_move, is_legal_pawn_move
+from collections import namedtuple
+from pieces import is_legal_move, is_legal_pawn_move, BLOCKABLE_PIECES
 from config import MOVE_DURATION
+
+PendingMove = namedtuple("PendingMove", ["source", "target", "arrival"])
 
 class Game:
     def __init__(self, board):
@@ -7,8 +10,11 @@ class Game:
         self.selected = None
         self.current_time = 0
         self.pending_moves = []
+        self.game_over = False
 
     def handle_click(self, x, y, cell_size):
+        if self.game_over:
+            return
         row = y // cell_size
         col = x // cell_size
 
@@ -50,10 +56,16 @@ class Game:
 
         piece = self.board.get_piece(source_row, source_col)
 
+        if any(m.source == source for m in self.pending_moves):
+            return
+
+        if self.route_conflicts(source_row, source_col, target_row, target_col):
+            return
+
         if piece[1] == "P":
             target_piece = self.board.get_piece(target_row, target_col)
             if is_legal_pawn_move(piece, source_row, source_col, target_row, target_col, target_piece):
-                self.pending_moves.append((source, target, self.current_time + MOVE_DURATION))
+                self.pending_moves.append(PendingMove(source, target, self.current_time + MOVE_DURATION))
             return
         
         if not is_legal_move(piece, source_row, source_col, target_row, target_col):
@@ -62,21 +74,41 @@ class Game:
         if self.board.target_has_same_color(source_row, source_col, target_row, target_col):
             return
 
-        if self.needs_blocker_check(piece):
+        if piece[1] in BLOCKABLE_PIECES:
             if self.board.has_blockers(source_row, source_col, target_row, target_col):
                 return
 
-        self.pending_moves.append((source, target, self.current_time + MOVE_DURATION))
+        self.pending_moves.append(PendingMove(source, target, self.current_time + MOVE_DURATION))
 
-    def needs_blocker_check(self, piece):
-        return piece[1] in {"R", "B", "Q"}
+    def route_conflicts(self, source_row, source_col, target_row, target_col):
+        new_cols = set(range(min(source_col, target_col), max(source_col, target_col) + 1))
+        return any(
+            new_cols & set(range(min(m.source[1], m.target[1]), max(m.source[1], m.target[1]) + 1))
+            for m in self.pending_moves
+        )
 
     def handle_wait(self, ms):
+        if self.game_over:
+            return
         self.current_time += ms
-        ready = [m for m in self.pending_moves if m[2] < self.current_time]
-        for source, target, _ in ready:
-            self.board.move_piece(*source, *target)
-        self.pending_moves = [m for m in self.pending_moves if m[2] >= self.current_time]
+        ready = [m for m in self.pending_moves if m.arrival <= self.current_time]
+        pending = [m for m in self.pending_moves if m.arrival > self.current_time]
+
+        simultaneous = {m.target for m in ready if sum(1 for o in ready if o.target == m.target and o.arrival == m.arrival) > 1}
+
+        for move in sorted(ready, key=lambda m: m.arrival):
+            if move.target in simultaneous:
+                self.board.remove_piece(*move.target)
+                continue
+            target_piece = self.board.get_piece(*move.target)
+            source_piece = self.board.get_piece(*move.source)
+            if target_piece != "." and self.board.same_color(source_piece, target_piece):
+                continue
+            self.board.move_piece(*move.source, *move.target)
+            if target_piece in ("wK", "bK"):
+                self.game_over = True
+
+        self.pending_moves = pending
 
     def handle_print_board(self):
         self.board.print_board()
