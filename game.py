@@ -49,8 +49,55 @@ class Game:
 
         piece = self.board.get_piece(source_row, source_col)
 
-        if is_legal_move(piece, source_row, source_col, target_row, target_col):
-            self.board.move_piece(source_row, source_col, target_row, target_col)
+        if piece[1] == "P":
+            if self.is_legal_pawn_move(
+                piece,
+                source_row,
+                source_col,
+                target_row,
+                target_col
+            ):
+                self.board.move_piece(source_row, source_col, target_row, target_col)
+            return
+        
+        if not is_legal_move(piece, source_row, source_col, target_row, target_col):
+            return
+
+        if self.board.target_has_same_color(source_row, source_col, target_row, target_col):
+            return
+
+        if self.needs_blocker_check(piece):
+            if self.board.has_blockers(source_row, source_col, target_row, target_col):
+                return
+
+        self.board.move_piece(source_row, source_col, target_row, target_col)
+
+    def is_legal_pawn_move(self, piece, source_row, source_col, target_row, target_col):
+        color = piece[0]
+        target_piece = self.board.get_piece(target_row, target_col)
+
+        row_diff = target_row - source_row
+        col_diff = target_col - source_col
+
+        if color == "w":
+            expected_row_diff = -1
+        else:
+            expected_row_diff = 1
+
+        if row_diff != expected_row_diff:
+            return False
+
+        if col_diff == 0:
+            return target_piece == "."
+
+        if abs(col_diff) == 1:
+            return target_piece != "." and target_piece[0] != color
+
+        return False
+    
+    def needs_blocker_check(self, piece):
+        return piece[1] in {"R", "B", "Q"}
+
     def handle_wait(self, ms):
         self.current_time += ms
 

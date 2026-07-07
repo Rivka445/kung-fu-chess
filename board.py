@@ -48,6 +48,38 @@ class ChessBoard:
 
     def get_piece(self, row, col):
         return self.matrix[row][col]
+    
+    def same_color(self, piece1, piece2):
+        return piece1 != "." and piece2 != "." and piece1[0] == piece2[0]
+
+    def target_has_same_color(self, source_row, source_col, target_row, target_col):
+        source_piece = self.get_piece(source_row, source_col)
+        target_piece = self.get_piece(target_row, target_col)
+
+        return self.same_color(source_piece, target_piece)
+    
+    def has_blockers(self, source_row, source_col, target_row, target_col):
+        row_step = self.get_step(target_row - source_row)
+        col_step = self.get_step(target_col - source_col)
+
+        current_row = source_row + row_step
+        current_col = source_col + col_step
+
+        while current_row != target_row or current_col != target_col:
+            if self.get_piece(current_row, current_col) != ".":
+                return True
+
+            current_row += row_step
+            current_col += col_step
+
+        return False
+
+    def get_step(self, diff):
+        if diff > 0:
+            return 1
+        if diff < 0:
+            return -1
+        return 0
 
     def move_piece(self, source_row, source_col, target_row, target_col):
         piece = self.matrix[source_row][source_col]
