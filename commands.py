@@ -1,5 +1,5 @@
 
-def execute_command(line, game):
+def execute_command(line, game, cell_size):
     parts = line.split()
 
     if len(parts) == 0:
@@ -8,7 +8,7 @@ def execute_command(line, game):
     if parts[0] == "click" and len(parts) == 3:
         x = int(parts[1])
         y = int(parts[2])
-        game.handle_click(x, y)
+        game.handle_click(x, y, cell_size)
 
     elif parts[0] == "wait" and len(parts) == 2:
         ms = int(parts[1])

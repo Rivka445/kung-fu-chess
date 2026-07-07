@@ -1,15 +1,16 @@
-from pieces import is_legal_move
-CELL_SIZE = 100
+from pieces import is_legal_move, is_legal_pawn_move
+from config import MOVE_DURATION
 
 class Game:
     def __init__(self, board):
         self.board = board
         self.selected = None
         self.current_time = 0
+        self.pending_moves = []
 
-    def handle_click(self, x, y):
-        row = y // CELL_SIZE
-        col = x // CELL_SIZE
+    def handle_click(self, x, y, cell_size):
+        row = y // cell_size
+        col = x // cell_size
 
         if not self.board.is_inside(row, col):
             return
@@ -30,7 +31,7 @@ class Game:
         selected_piece = self.board.get_piece(selected_row, selected_col)
         clicked_piece = self.board.get_piece(row, col)
 
-        if self.same_color(selected_piece, clicked_piece):
+        if self.board.same_color(selected_piece, clicked_piece):
             self.selected = (row, col)
         else:
             self.request_move(self.selected, (row, col))
@@ -50,14 +51,9 @@ class Game:
         piece = self.board.get_piece(source_row, source_col)
 
         if piece[1] == "P":
-            if self.is_legal_pawn_move(
-                piece,
-                source_row,
-                source_col,
-                target_row,
-                target_col
-            ):
-                self.board.move_piece(source_row, source_col, target_row, target_col)
+            target_piece = self.board.get_piece(target_row, target_col)
+            if is_legal_pawn_move(piece, source_row, source_col, target_row, target_col, target_piece):
+                self.pending_moves.append((source, target, self.current_time + MOVE_DURATION))
             return
         
         if not is_legal_move(piece, source_row, source_col, target_row, target_col):
@@ -70,39 +66,18 @@ class Game:
             if self.board.has_blockers(source_row, source_col, target_row, target_col):
                 return
 
-        self.board.move_piece(source_row, source_col, target_row, target_col)
+        self.pending_moves.append((source, target, self.current_time + MOVE_DURATION))
 
-    def is_legal_pawn_move(self, piece, source_row, source_col, target_row, target_col):
-        color = piece[0]
-        target_piece = self.board.get_piece(target_row, target_col)
-
-        row_diff = target_row - source_row
-        col_diff = target_col - source_col
-
-        if color == "w":
-            expected_row_diff = -1
-        else:
-            expected_row_diff = 1
-
-        if row_diff != expected_row_diff:
-            return False
-
-        if col_diff == 0:
-            return target_piece == "."
-
-        if abs(col_diff) == 1:
-            return target_piece != "." and target_piece[0] != color
-
-        return False
-    
     def needs_blocker_check(self, piece):
         return piece[1] in {"R", "B", "Q"}
 
     def handle_wait(self, ms):
         self.current_time += ms
+        ready = [m for m in self.pending_moves if m[2] < self.current_time]
+        for source, target, _ in ready:
+            self.board.move_piece(*source, *target)
+        self.pending_moves = [m for m in self.pending_moves if m[2] >= self.current_time]
 
     def handle_print_board(self):
         self.board.print_board()
 
-    def same_color(self, piece1, piece2):
-        return piece1[0] == piece2[0]

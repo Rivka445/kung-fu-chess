@@ -1,5 +1,3 @@
-# board.py
-import sys
 from pieces import VALID_PIECE_TYPES, VALID_COLORS
 
 class ChessBoard:
@@ -10,30 +8,26 @@ class ChessBoard:
     def add_row(self, line_str: str):
         tokens = line_str.split()
         
-        if len(tokens) == 0:
-            print("ERROR EMPTY_ROW")
-            sys.exit(0)
+        if not tokens:
+            raise ValueError("EMPTY_ROW")
 
         if self.expected_cols is None:
             self.expected_cols = len(tokens)
         elif len(tokens) != self.expected_cols:
-            print("ERROR ROW_WIDTH_MISMATCH")
-            sys.exit(0)
+            raise ValueError("ROW_WIDTH_MISMATCH")
             
         for token in tokens:
             if token == ".":
                 continue
             
             if len(token) != 2:
-                print("ERROR UNKNOWN_TOKEN")
-                sys.exit(0)
+                raise ValueError("UNKNOWN_TOKEN")
             
             color = token[0]
             piece_type = token[1]
 
             if color not in VALID_COLORS or piece_type not in VALID_PIECE_TYPES:
-                print("ERROR UNKNOWN_TOKEN")
-                sys.exit(0)
+                raise ValueError("UNKNOWN_TOKEN")
   
         self.matrix.append(tokens)
 

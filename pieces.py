@@ -31,6 +31,26 @@ MOVE_RULES = {
 }
 
 
+def is_legal_pawn_move(piece, source_row, source_col, target_row, target_col, target_piece):
+    color = piece[0]
+
+    row_diff = target_row - source_row
+    col_diff = target_col - source_col
+
+    expected_row_diff = -1 if color == "w" else 1
+
+    if row_diff != expected_row_diff:
+        return False
+
+    if col_diff == 0:
+        return target_piece == "."
+
+    if abs(col_diff) == 1:
+        return target_piece != "." and target_piece[0] != color
+
+    return False
+
+
 def is_legal_move(piece, source_row, source_col, target_row, target_col):
     piece_type = piece[1]
 
