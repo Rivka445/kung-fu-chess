@@ -85,10 +85,11 @@ class ChessBoard:
 
     def promote_pawn(self, row, col):
         piece = self.matrix[row][col]
-        if piece[1] == "P":
-            last_row = 0 if piece[0] == "w" else len(self.matrix) - 1
-            if row == last_row:
-                self.matrix[row][col] = piece[0] + "Q"
+        if piece == "." or piece[1] != "P":
+            return
+        last_row = 0 if piece[0] == "w" else len(self.matrix) - 1
+        if row == last_row:
+            self.matrix[row][col] = piece[0] + "Q"
 
     def remove_piece(self, row, col):
         self.matrix[row][col] = "."

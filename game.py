@@ -3,6 +3,7 @@ from pieces import is_legal_move, is_legal_pawn_move, BLOCKABLE_PIECES
 from config import MOVE_DURATION
 
 PendingMove = namedtuple("PendingMove", ["source", "target", "arrival"])
+AirbornePiece = namedtuple("AirbornePiece", ["cell", "landing_time"])
 
 class Game:
     def __init__(self, board):
@@ -11,6 +12,8 @@ class Game:
         self.current_time = 0
         self.pending_moves = []
         self.game_over = False
+        self.cooldowns = {}
+        self.airborne = []
 
     def handle_click(self, x, y, cell_size):
         if self.game_over:
@@ -59,6 +62,9 @@ class Game:
         if any(m.source == source for m in self.pending_moves):
             return
 
+        if self.cooldowns.get(source, 0) > self.current_time:
+            return
+
         if self.route_conflicts(source_row, source_col, target_row, target_col):
             return
 
@@ -97,22 +103,51 @@ class Game:
         ready = [m for m in self.pending_moves if m.arrival <= self.current_time]
         pending = [m for m in self.pending_moves if m.arrival > self.current_time]
 
+        landed = [a for a in self.airborne if a.landing_time <= self.current_time]
+        self.airborne = [a for a in self.airborne if a.landing_time > self.current_time]
+        for a in landed:
+            self.cooldowns[a.cell] = a.landing_time + MOVE_DURATION
+
         simultaneous = {m.target for m in ready if sum(1 for o in ready if o.target == m.target and o.arrival == m.arrival) > 1}
 
         for move in sorted(ready, key=lambda m: m.arrival):
             if move.target in simultaneous:
                 self.board.remove_piece(*move.target)
                 continue
-            target_piece = self.board.get_piece(*move.target)
             source_piece = self.board.get_piece(*move.source)
+            target_piece = self.board.get_piece(*move.target)
+            airborne_here = next((a for a in self.airborne + landed if a.cell == move.target), None)
+            if airborne_here is not None and target_piece != "." and not self.board.same_color(source_piece, target_piece):
+                self.board.remove_piece(*move.source)
+                continue
             if target_piece != "." and self.board.same_color(source_piece, target_piece):
                 continue
             self.board.move_piece(*move.source, *move.target)
             if target_piece in ("wK", "bK"):
                 self.game_over = True
             self.board.promote_pawn(*move.target)
+            self.cooldowns[move.target] = move.arrival + MOVE_DURATION
 
         self.pending_moves = pending
+
+    def handle_jump(self, x, y, cell_size):
+        if self.game_over:
+            return
+        row = y // cell_size
+        col = x // cell_size
+        if not self.board.is_inside(row, col):
+            return
+        cell = (row, col)
+        piece = self.board.get_piece(row, col)
+        if piece == ".":
+            return
+        if any(m.source == cell for m in self.pending_moves):
+            return
+        if any(a.cell == cell for a in self.airborne):
+            return
+        if self.cooldowns.get(cell, 0) > self.current_time:
+            return
+        self.airborne.append(AirbornePiece(cell, self.current_time + MOVE_DURATION))
 
     def handle_print_board(self):
         self.board.print_board()

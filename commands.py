@@ -20,5 +20,13 @@ def execute_command(line, game, cell_size):
             return
         game.handle_wait(ms)
 
+    elif parts[0] == "jump" and len(parts) == 3:
+        try:
+            x = int(parts[1])
+            y = int(parts[2])
+        except ValueError:
+            return
+        game.handle_jump(x, y, cell_size)
+
     elif len(parts) == 2 and parts[0] == "print" and parts[1] == "board":
         game.handle_print_board()
