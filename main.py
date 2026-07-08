@@ -3,6 +3,8 @@ from services.board import ChessBoard
 from services.board_parser import parse_row
 from services.move_rules import Rules
 from controllers.game_controller import Game
+from controllers.command_parser import execute_command
+from observers.log_listener import LogListener
 from constants import CELL_SIZE
 from exceptions import BoardParseError
 from logger import logger
@@ -15,6 +17,7 @@ def main():
     board = ChessBoard()
     rules = Rules()
     game = Game(board, rules)
+    game.add_listener(LogListener())
 
     in_board_section = False
     in_commands_section = False

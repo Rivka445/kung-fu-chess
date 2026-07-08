@@ -1,7 +1,6 @@
 from models.position import Position
 from models.game_state import GameState, PendingMove, AirbornePiece
 from observers.base import GameEventListener
-from observers.log_listener import LogListener
 from constants import MOVE_DURATION
 from logger import logger
 
@@ -15,7 +14,7 @@ class Game:
         self.board = board
         self.rules = rules
         self.state = GameState()
-        self._listeners: list[GameEventListener] = [LogListener()]
+        self._listeners: list[GameEventListener] = []
 
     def add_listener(self, listener: GameEventListener):
         """Registers a new subscriber to receive game events."""
@@ -135,30 +134,49 @@ class Game:
     def _apply_move(self, move, simultaneous, landed):
         """Applies a single move that has reached its destination.
         Handles simultaneous collisions, airborne interactions, friendly piece blocking, captures, king capture, and pawn promotion."""
-        if move.target in simultaneous:
-            self.board.remove_piece(move.target)
-            self._notify_collision(move.target)
+        if self._is_simultaneous_collision(move, simultaneous):
             return
         source_piece = self.board.get_piece(move.source)
         target_piece = self.board.get_piece(move.target)
-        airborne_here = next((a for a in self.state.airborne + landed if a.cell == move.target), None)
-        if airborne_here is not None and target_piece is not None and not source_piece.same_color(target_piece):
-            self.board.remove_piece(move.source)
-            self._notify_collision(move.target)
+        if self._is_airborne_collision(move, source_piece, target_piece, landed):
             return
         if target_piece is not None and source_piece.same_color(target_piece):
             return
         self.board.move_piece(move.source, move.target)
         self._notify_move_applied(move.source, move.target)
+        self._check_king_captured(target_piece, move.target)
+        self._check_pawn_promoted(move.target)
+        self.state.cooldowns[move.target] = move.arrival + MOVE_DURATION
+
+    def _is_simultaneous_collision(self, move, simultaneous) -> bool:
+        """Returns True and removes the piece if this move collides simultaneously with another."""
+        if move.target in simultaneous:
+            self.board.remove_piece(move.target)
+            self._notify_collision(move.target)
+            return True
+        return False
+
+    def _is_airborne_collision(self, move, source_piece, target_piece, landed) -> bool:
+        """Returns True and removes the attacker if it collides with an airborne enemy piece."""
+        airborne_here = next((a for a in self.state.airborne + landed if a.cell == move.target), None)
+        if airborne_here is not None and target_piece is not None and not source_piece.same_color(target_piece):
+            self.board.remove_piece(move.source)
+            self._notify_collision(move.target)
+            return True
+        return False
+
+    def _check_king_captured(self, target_piece, pos: Position):
+        """Sets game over and notifies if the captured piece was a king."""
         if target_piece is not None and target_piece.is_king:
             self.state.game_over = True
-            self._notify_king_captured(move.target)
-        if self.board.get_piece(move.target) and self.board.get_piece(move.target).is_pawn:
-            self.board.promote_pawn(move.target)
-            self._notify_pawn_promoted(move.target)
-        else:
-            self.board.promote_pawn(move.target)
-        self.state.cooldowns[move.target] = move.arrival + MOVE_DURATION
+            self._notify_king_captured(pos)
+
+    def _check_pawn_promoted(self, pos: Position):
+        """Promotes a pawn if it reached the last row, then notifies."""
+        piece = self.board.get_piece(pos)
+        if piece is not None and piece.is_pawn:
+            self.board.promote_pawn(pos)
+            self._notify_pawn_promoted(pos)
 
     def handle_jump(self, x, y, cell_size):
         """Handles a jump command at pixel coordinates (x, y).
