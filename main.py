@@ -3,11 +3,15 @@ from services.board import ChessBoard
 from services.board_parser import parse_row
 from services.move_rules import Rules
 from controllers.game_controller import Game
-from controllers.command_parser import execute_command
-from config import CELL_SIZE
+from constants import CELL_SIZE
+from exceptions import BoardParseError
+from logger import logger
 
 
 def main():
+    """Entry point for the Kung Fu Chess engine.
+    Reads input from stdin in two sections: 'Board:' defines the initial board layout row by row,
+    and 'Commands:' contains a sequence of game commands to execute such as click, wait, jump, and print board."""
     board = ChessBoard()
     rules = Rules()
     game = Game(board, rules)
@@ -34,7 +38,8 @@ def main():
             try:
                 row = parse_row(line_str, board.expected_cols)
                 board.add_parsed_row(row)
-            except ValueError as e:
+            except BoardParseError as e:
+                logger.error("board parse error: %s", e)
                 print(f"ERROR {e}")
                 sys.exit(0)
 

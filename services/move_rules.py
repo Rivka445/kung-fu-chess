@@ -8,6 +8,8 @@ def _queen_move(dr, dc): return _rook_move(dr, dc) or _bishop_move(dr, dc)
 def _knight_move(dr, dc): return (dr, dc) in {(2, 1), (1, 2)}
 
 
+# Maps each piece type to its movement validation function.
+# Each function receives the absolute row and column differences and returns True if the shape of the move is legal.
 _MOVE_RULES = {
     PieceType.KING: _king_move,
     PieceType.ROOK: _rook_move,
@@ -18,7 +20,14 @@ _MOVE_RULES = {
 
 
 class Rules:
+    """Contains all movement validation logic for chess pieces.
+    Determines whether a given move is legal based on piece type, direction, distance, and board context."""
+
     def is_legal_move(self, piece: Piece, source, target) -> bool:
+        """Returns True if the move from source to target is legal for the given piece.
+        Checks the shape of the move against the piece type's movement rule.
+        Does not check for blockers or board boundaries — those are handled separately.
+        Pawns are not handled here; use is_legal_pawn_move instead."""
         dr = abs(target.row - source.row)
         dc = abs(target.col - source.col)
         if dr == 0 and dc == 0:
@@ -27,6 +36,10 @@ class Rules:
         return rule(dr, dc) if rule else False
 
     def is_legal_pawn_move(self, piece: Piece, source, target, target_piece, board_rows=8, has_blocker=False) -> bool:
+        """Returns True if the pawn move from source to target is legal.
+        Handles all pawn-specific rules: forward movement, double step from starting row, and diagonal capture.
+        White pawns move upward (decreasing row), black pawns move downward (increasing row).
+        The has_blocker parameter is used to reject a double step if a piece stands in the way."""
         expected_dir = -1 if piece.color == Color.WHITE else 1
         start_row = board_rows - 1 if piece.color == Color.WHITE else 0
         row_diff = target.row - source.row
