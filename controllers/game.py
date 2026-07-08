@@ -1,12 +1,12 @@
-from position import Position
-from rules import is_legal_move, is_legal_pawn_move
-from game_state import GameState, PendingMove, AirbornePiece
+from models.position import Position
+from models.game_state import GameState, PendingMove, AirbornePiece
 from config import MOVE_DURATION
 
 
 class Game:
-    def __init__(self, board):
+    def __init__(self, board, rules):
         self.board = board
+        self.rules = rules
         self.state = GameState()
 
     def handle_click(self, x, y, cell_size):
@@ -50,13 +50,13 @@ class Game:
         if piece.is_pawn:
             target_piece = self.board.get_piece(target)
             board_rows = len(self.board.matrix)
-            if is_legal_pawn_move(piece, source, target, target_piece, board_rows):
+            if self.rules.is_legal_pawn_move(piece, source, target, target_piece, board_rows):
                 if abs(target.row - source.row) == 2 and self.board.has_blockers(source, target):
                     return
                 self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION))
             return
 
-        if not is_legal_move(piece, source, target):
+        if not self.rules.is_legal_move(piece, source, target):
             return
         if self.board.same_color(piece, self.board.get_piece(target)):
             return

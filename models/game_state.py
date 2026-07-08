@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from position import Position
+from models.position import Position
 
 
 @dataclass(frozen=True)

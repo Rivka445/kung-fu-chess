@@ -1,4 +1,4 @@
-from piece import Piece, VALID_COLORS, VALID_PIECE_TYPES
+from models.piece import Piece, VALID_COLORS, VALID_PIECE_TYPES
 
 
 def parse_row(line_str: str, expected_cols: int = None):

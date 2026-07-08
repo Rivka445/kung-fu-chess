@@ -1,5 +1,5 @@
-from piece import Piece, PieceType, Color
-from position import Position
+from models.piece import Piece, PieceType, Color
+from models.position import Position
 
 
 class ChessBoard:
