@@ -1,39 +1,5 @@
-from abc import ABC, abstractmethod
 from models.piece import Piece, PieceType, Color, BLOCKABLE
-
-
-class MoveStrategy(ABC):
-    """Base strategy for validating the shape of a piece's move.
-    Receives absolute row and column differences and returns True if the move shape is legal."""
-    @abstractmethod
-    def is_legal(self, dr: int, dc: int) -> bool: ...
-
-
-class KingStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr <= 1 and dc <= 1
-
-class RookStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == 0 or dc == 0
-
-class BishopStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == dc
-
-class QueenStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == 0 or dc == 0 or dr == dc
-
-class KnightStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return (dr, dc) in {(2, 1), (1, 2)}
-
-
-# Maps each piece type to its MoveStrategy instance.
-# To add a new piece type, create a MoveStrategy subclass and register it here.
-_MOVE_RULES: dict[PieceType, MoveStrategy] = {
-    PieceType.KING: KingStrategy(),
-    PieceType.ROOK: RookStrategy(),
-    PieceType.BISHOP: BishopStrategy(),
-    PieceType.QUEEN: QueenStrategy(),
-    PieceType.KNIGHT: KnightStrategy(),
-}
+from services.move_strategies import MOVE_STRATEGIES
 
 
 class Rules:
@@ -49,7 +15,7 @@ class Rules:
         dc = abs(target.col - source.col)
         if dr == 0 and dc == 0:
             return False
-        strategy = _MOVE_RULES.get(piece.type)
+        strategy = MOVE_STRATEGIES.get(piece.type)
         return strategy.is_legal(dr, dc) if strategy else False
 
     def is_legal_pawn_move(self, piece: Piece, source, target, target_piece, board_rows=8, has_blocker=False) -> bool:

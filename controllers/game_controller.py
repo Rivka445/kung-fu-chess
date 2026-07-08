@@ -1,28 +1,9 @@
-from abc import ABC, abstractmethod
 from models.position import Position
 from models.game_state import GameState, PendingMove, AirbornePiece
+from observers.base import GameEventListener
+from observers.log_listener import LogListener
 from constants import MOVE_DURATION
 from logger import logger
-
-
-class GameEventListener(ABC):
-    """Subscriber interface. Implement any subset of methods to react to game events."""
-    def on_move_applied(self, source: Position, target: Position): ...
-    def on_king_captured(self, pos: Position): ...
-    def on_pawn_promoted(self, pos: Position): ...
-    def on_collision(self, pos: Position): ...
-
-
-class LogListener(GameEventListener):
-    """Concrete subscriber that logs every game event."""
-    def on_move_applied(self, source, target):
-        logger.info("moved: %s → %s", source, target)
-    def on_king_captured(self, pos):
-        logger.warning("king captured at %s — game over", pos)
-    def on_pawn_promoted(self, pos):
-        logger.info("pawn promoted at %s", pos)
-    def on_collision(self, pos):
-        logger.info("collision at %s — pieces removed", pos)
 
 
 class Game:
