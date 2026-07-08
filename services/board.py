@@ -1,5 +1,5 @@
 from models.piece import Piece, PieceType, Color
-from models.position import Position
+from models.position import Position, to_chess_notation
 
 
 class ChessBoard:
@@ -65,5 +65,8 @@ class ChessBoard:
             self.set_piece(pos, Piece(piece.color, PieceType.QUEEN))
 
     def print_board(self):
-        for row in self.matrix:
-            print(" ".join(p.to_str() if p is not None else "." for p in row))
+        board_rows = len(self.matrix)
+        for r, row in enumerate(self.matrix):
+            row_num = board_rows - r
+            print(f"{row_num} " + " ".join(p.to_str() if p is not None else "." for p in row))
+        print("  " + " ".join(chr(ord('a') + c) for c in range(self.expected_cols)))

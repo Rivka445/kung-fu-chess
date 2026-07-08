@@ -44,8 +44,6 @@ class Game:
 
         if self.state.is_busy(source):
             return
-        if self._route_conflicts(source, target):
-            return
 
         if piece.is_pawn:
             target_piece = self.board.get_piece(target)
@@ -63,13 +61,6 @@ class Game:
             return
 
         self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION))
-
-    def _route_conflicts(self, source: Position, target: Position) -> bool:
-        new_path = set(self.board.path(source, target)) | {source}
-        return any(
-            self.rules.paths_conflict(new_path, set(self.board.path(m.source, m.target)) | {m.source})
-            for m in self.state.pending_moves
-        )
 
     def handle_wait(self, ms):
         if self.state.game_over:

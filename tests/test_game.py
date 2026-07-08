@@ -145,3 +145,14 @@ def test_enemy_arrives_after_landing_captures_normally():
     game.handle_click(50, 150, 100)
     game.handle_wait(3000)
     assert board.get_piece(Position(1, 0)) == Piece.from_str("bR")
+
+
+def test_two_rooks_same_columns_both_move():
+    game, board = make_game(["wR . .", ". . .", "bR . ."])
+    game.handle_click(50, 50, 100)
+    game.handle_click(250, 50, 100)
+    game.handle_click(50, 250, 100)
+    game.handle_click(250, 250, 100)
+    game.handle_wait(2000)
+    assert board.get_piece(Position(0, 2)) == Piece.from_str("wR")
+    assert board.get_piece(Position(2, 2)) == Piece.from_str("bR")

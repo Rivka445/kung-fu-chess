@@ -18,9 +18,6 @@ _MOVE_RULES = {
 
 
 class Rules:
-    def paths_conflict(self, path1: set, path2: set) -> bool:
-        return bool(path1 & path2)
-
     def is_legal_move(self, piece: Piece, source, target) -> bool:
         dr = abs(target.row - source.row)
         dc = abs(target.col - source.col)
