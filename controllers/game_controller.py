@@ -1,7 +1,28 @@
+from abc import ABC, abstractmethod
 from models.position import Position
 from models.game_state import GameState, PendingMove, AirbornePiece
 from constants import MOVE_DURATION
 from logger import logger
+
+
+class GameEventListener(ABC):
+    """Subscriber interface. Implement any subset of methods to react to game events."""
+    def on_move_applied(self, source: Position, target: Position): ...
+    def on_king_captured(self, pos: Position): ...
+    def on_pawn_promoted(self, pos: Position): ...
+    def on_collision(self, pos: Position): ...
+
+
+class LogListener(GameEventListener):
+    """Concrete subscriber that logs every game event."""
+    def on_move_applied(self, source, target):
+        logger.info("moved: %s → %s", source, target)
+    def on_king_captured(self, pos):
+        logger.warning("king captured at %s — game over", pos)
+    def on_pawn_promoted(self, pos):
+        logger.info("pawn promoted at %s", pos)
+    def on_collision(self, pos):
+        logger.info("collision at %s — pieces removed", pos)
 
 
 class Game:
@@ -13,6 +34,23 @@ class Game:
         self.board = board
         self.rules = rules
         self.state = GameState()
+        self._listeners: list[GameEventListener] = [LogListener()]
+
+    def add_listener(self, listener: GameEventListener):
+        """Registers a new subscriber to receive game events."""
+        self._listeners.append(listener)
+
+    def _notify_move_applied(self, source, target):
+        for l in self._listeners: l.on_move_applied(source, target)
+
+    def _notify_king_captured(self, pos):
+        for l in self._listeners: l.on_king_captured(pos)
+
+    def _notify_pawn_promoted(self, pos):
+        for l in self._listeners: l.on_pawn_promoted(pos)
+
+    def _notify_collision(self, pos):
+        for l in self._listeners: l.on_collision(pos)
 
     def handle_click(self, x, y, cell_size):
         """Handles a click at pixel coordinates (x, y).
@@ -117,24 +155,28 @@ class Game:
         """Applies a single move that has reached its destination.
         Handles simultaneous collisions, airborne interactions, friendly piece blocking, captures, king capture, and pawn promotion."""
         if move.target in simultaneous:
-            logger.info("simultaneous collision at %s — pieces removed", move.target)
             self.board.remove_piece(move.target)
+            self._notify_collision(move.target)
             return
         source_piece = self.board.get_piece(move.source)
         target_piece = self.board.get_piece(move.target)
         airborne_here = next((a for a in self.state.airborne + landed if a.cell == move.target), None)
         if airborne_here is not None and target_piece is not None and not source_piece.same_color(target_piece):
-            logger.info("airborne collision at %s — attacking piece removed", move.target)
             self.board.remove_piece(move.source)
+            self._notify_collision(move.target)
             return
         if target_piece is not None and source_piece.same_color(target_piece):
             return
         self.board.move_piece(move.source, move.target)
-        logger.info("moved %s: %s → %s", source_piece.to_str(), move.source, move.target)
+        self._notify_move_applied(move.source, move.target)
         if target_piece is not None and target_piece.is_king:
-            logger.warning("king captured — game over")
             self.state.game_over = True
-        self.board.promote_pawn(move.target)
+            self._notify_king_captured(move.target)
+        if self.board.get_piece(move.target) and self.board.get_piece(move.target).is_pawn:
+            self.board.promote_pawn(move.target)
+            self._notify_pawn_promoted(move.target)
+        else:
+            self.board.promote_pawn(move.target)
         self.state.cooldowns[move.target] = move.arrival + MOVE_DURATION
 
     def handle_jump(self, x, y, cell_size):
