@@ -1,9 +1,16 @@
+from abc import ABC, abstractmethod
 from models.position import from_chess_notation
 from logger import logger
 
 # Global registry that maps command names to their handler instances.
 # Commands register themselves automatically using the @register decorator.
 _REGISTRY = {}
+
+
+class Command(ABC):
+    """Base class for all game commands. Enforces a uniform execute interface."""
+    @abstractmethod
+    def execute(self, game, parts, cell_size): ...
 
 
 def register(name):
@@ -23,7 +30,7 @@ def _parse_square(token, board_rows, cell_size):
 
 
 @register("click")
-class ClickCommand:
+class ClickCommand(Command):
     """Handles the 'click' command, which selects a piece or moves a selected piece to a target.
     Accepts either pixel coordinates ('click 50 50') or chess notation ('click e2 e4')."""
     def execute(self, game, parts, cell_size):
@@ -32,17 +39,19 @@ class ClickCommand:
         board_rows = len(game.board.matrix)
         try:
             x, y = int(parts[1]), int(parts[2])
+            game.handle_click(x, y, cell_size)
         except ValueError:
             try:
                 x, y = _parse_square(parts[1], board_rows, cell_size)
                 x2, y2 = _parse_square(parts[2], board_rows, cell_size)
                 game.handle_click(x, y, cell_size)
                 game.handle_click(x2, y2, cell_size)
-                return
             except (IndexError, ValueError):
                 logger.warning("invalid chess notation in click command: %s %s", parts[1], parts[2])
-                return
-class WaitCommand:
+
+
+@register("wait")
+class WaitCommand(Command):
     """Handles the 'wait' command, which advances the game clock by a given number of milliseconds.
     Example: 'wait 1000' advances time by one second and processes all moves that arrive in that window."""
     def execute(self, game, parts, cell_size):
@@ -52,8 +61,10 @@ class WaitCommand:
             game.handle_wait(int(parts[1]))
         except ValueError:
             logger.warning("invalid wait argument: %s", parts[1])
-            return
-class JumpCommand:
+
+
+@register("jump")
+class JumpCommand(Command):
     """Handles the 'jump' command, which launches a piece into the air from the given position.
     Accepts either pixel coordinates ('jump 150 150') or chess notation ('jump e4')."""
     def execute(self, game, parts, cell_size):
@@ -76,7 +87,7 @@ class JumpCommand:
 
 
 @register("print")
-class PrintCommand:
+class PrintCommand(Command):
     """Handles the 'print board' command, which outputs the current board state to stdout with chess notation labels."""
     def execute(self, game, parts, cell_size):
         if len(parts) == 2 and parts[1] == "board":

@@ -1,21 +1,38 @@
+from abc import ABC, abstractmethod
 from models.piece import Piece, PieceType, Color, BLOCKABLE
 
 
-def _king_move(dr, dc): return dr <= 1 and dc <= 1
-def _rook_move(dr, dc): return dr == 0 or dc == 0
-def _bishop_move(dr, dc): return dr == dc
-def _queen_move(dr, dc): return _rook_move(dr, dc) or _bishop_move(dr, dc)
-def _knight_move(dr, dc): return (dr, dc) in {(2, 1), (1, 2)}
+class MoveStrategy(ABC):
+    """Base strategy for validating the shape of a piece's move.
+    Receives absolute row and column differences and returns True if the move shape is legal."""
+    @abstractmethod
+    def is_legal(self, dr: int, dc: int) -> bool: ...
 
 
-# Maps each piece type to its movement validation function.
-# Each function receives the absolute row and column differences and returns True if the shape of the move is legal.
-_MOVE_RULES = {
-    PieceType.KING: _king_move,
-    PieceType.ROOK: _rook_move,
-    PieceType.BISHOP: _bishop_move,
-    PieceType.QUEEN: _queen_move,
-    PieceType.KNIGHT: _knight_move,
+class KingStrategy(MoveStrategy):
+    def is_legal(self, dr, dc): return dr <= 1 and dc <= 1
+
+class RookStrategy(MoveStrategy):
+    def is_legal(self, dr, dc): return dr == 0 or dc == 0
+
+class BishopStrategy(MoveStrategy):
+    def is_legal(self, dr, dc): return dr == dc
+
+class QueenStrategy(MoveStrategy):
+    def is_legal(self, dr, dc): return dr == 0 or dc == 0 or dr == dc
+
+class KnightStrategy(MoveStrategy):
+    def is_legal(self, dr, dc): return (dr, dc) in {(2, 1), (1, 2)}
+
+
+# Maps each piece type to its MoveStrategy instance.
+# To add a new piece type, create a MoveStrategy subclass and register it here.
+_MOVE_RULES: dict[PieceType, MoveStrategy] = {
+    PieceType.KING: KingStrategy(),
+    PieceType.ROOK: RookStrategy(),
+    PieceType.BISHOP: BishopStrategy(),
+    PieceType.QUEEN: QueenStrategy(),
+    PieceType.KNIGHT: KnightStrategy(),
 }
 
 
@@ -25,15 +42,15 @@ class Rules:
 
     def is_legal_move(self, piece: Piece, source, target) -> bool:
         """Returns True if the move from source to target is legal for the given piece.
-        Checks the shape of the move against the piece type's movement rule.
+        Delegates shape validation to the registered MoveStrategy for the piece type.
         Does not check for blockers or board boundaries — those are handled separately.
         Pawns are not handled here; use is_legal_pawn_move instead."""
         dr = abs(target.row - source.row)
         dc = abs(target.col - source.col)
         if dr == 0 and dc == 0:
             return False
-        rule = _MOVE_RULES.get(piece.type)
-        return rule(dr, dc) if rule else False
+        strategy = _MOVE_RULES.get(piece.type)
+        return strategy.is_legal(dr, dc) if strategy else False
 
     def is_legal_pawn_move(self, piece: Piece, source, target, target_piece, board_rows=8, has_blocker=False) -> bool:
         """Returns True if the pawn move from source to target is legal.
