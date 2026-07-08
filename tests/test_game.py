@@ -7,8 +7,8 @@ from models.position import Position
 from models.piece import Piece
 from services.board import ChessBoard
 from services.board_parser import parse_row
-from services.rules import Rules
-from controllers.game import Game
+from services.move_rules import Rules
+from controllers.game_controller import Game
 
 
 def make_game(rows):

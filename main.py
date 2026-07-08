@@ -1,9 +1,9 @@
 import sys
 from services.board import ChessBoard
 from services.board_parser import parse_row
-from services.rules import Rules
-from controllers.game import Game
-from controllers.commands import execute_command
+from services.move_rules import Rules
+from controllers.game_controller import Game
+from controllers.command_parser import execute_command
 from config import CELL_SIZE
 
 

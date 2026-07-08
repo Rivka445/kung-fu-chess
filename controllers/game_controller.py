@@ -50,9 +50,8 @@ class Game:
         if piece.is_pawn:
             target_piece = self.board.get_piece(target)
             board_rows = len(self.board.matrix)
-            if self.rules.is_legal_pawn_move(piece, source, target, target_piece, board_rows):
-                if abs(target.row - source.row) == 2 and self.board.has_blockers(source, target):
-                    return
+            has_blocker = abs(target.row - source.row) == 2 and self.board.has_blockers(source, target)
+            if self.rules.is_legal_pawn_move(piece, source, target, target_piece, board_rows, has_blocker):
                 self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION))
             return
 
@@ -66,9 +65,9 @@ class Game:
         self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION))
 
     def _route_conflicts(self, source: Position, target: Position) -> bool:
-        new_cols = set(range(min(source.col, target.col), max(source.col, target.col) + 1))
+        new_path = set(self.board.path(source, target)) | {source}
         return any(
-            new_cols & set(range(min(m.source.col, m.target.col), max(m.source.col, m.target.col) + 1))
+            self.rules.paths_conflict(new_path, set(self.board.path(m.source, m.target)) | {m.source})
             for m in self.state.pending_moves
         )
 

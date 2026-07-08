@@ -13,6 +13,8 @@ class ChessBoard:
         self.matrix.append(row)
 
     def is_inside(self, pos: Position) -> bool:
+        if self.expected_cols is None:
+            return False
         return 0 <= pos.row < len(self.matrix) and 0 <= pos.col < self.expected_cols
 
     def get_piece(self, pos: Position):
@@ -25,7 +27,7 @@ class ChessBoard:
         return p1 is not None and p2 is not None and p1.same_color(p2)
 
     def has_blockers(self, source: Position, target: Position) -> bool:
-        for pos in self._path(source, target)[:-1]:
+        for pos in self.path(source, target)[:-1]:
             if self.get_piece(pos) is not None:
                 return True
         return False
@@ -33,7 +35,7 @@ class ChessBoard:
     def _step(self, diff):
         return 1 if diff > 0 else (-1 if diff < 0 else 0)
 
-    def _path(self, source: Position, target: Position):
+    def path(self, source: Position, target: Position):
         row_step = self._step(target.row - source.row)
         col_step = self._step(target.col - source.col)
         path = []

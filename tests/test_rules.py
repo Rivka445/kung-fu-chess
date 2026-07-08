@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import pytest
 from models.piece import Piece
 from models.position import Position
-from services.rules import Rules
+from services.move_rules import Rules
 
 rules = Rules()
 
@@ -37,3 +37,4 @@ def test_white_capture_empty(): assert not rules.is_legal_pawn_move(p("wP"), pos
 def test_black_forward(): assert rules.is_legal_pawn_move(p("bP"), pos(1, 0), pos(2, 0), None)
 def test_black_double_from_start(): assert rules.is_legal_pawn_move(p("bP"), pos(0, 0), pos(2, 0), None, board_rows=8)
 def test_white_backward_illegal(): assert not rules.is_legal_pawn_move(p("wP"), pos(4, 0), pos(5, 0), None)
+def test_white_double_blocked(): assert not rules.is_legal_pawn_move(p("wP"), pos(7, 0), pos(5, 0), None, board_rows=8, has_blocker=True)
