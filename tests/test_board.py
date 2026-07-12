@@ -3,10 +3,10 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from models.piece import Piece, Color, PieceType
-from models.position import Position
-from services.board import ChessBoard
-from services.board_parser import parse_row
+from model.piece import Piece, Color, PieceType
+from model.position import Position
+from model.board import Board as ChessBoard
+from board_io.board_parser import parse_row
 
 
 def make_board(rows):

@@ -3,8 +3,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from models.piece import Piece
-from services.board_parser import parse_row
+from model.piece import Piece
+from board_io.board_parser import parse_row
 from exceptions import EmptyRowError, RowWidthMismatchError, UnknownTokenError
 
 

@@ -3,8 +3,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from models.position import Position
-from models.game_state import GameState, PendingMove, AirbornePiece
+from model.position import Position
+from model.game_state import GameState, PendingMove, AirbornePiece
 
 
 def test_is_busy_pending():

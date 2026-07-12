@@ -1,4 +1,4 @@
-from observers.base import GameEventListener
+from events.base import GameEventListener
 from logger import logger
 
 

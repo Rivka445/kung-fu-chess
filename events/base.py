@@ -1,5 +1,5 @@
 from abc import ABC
-from models.position import Position
+from model.position import Position
 
 
 class GameEventListener(ABC):
