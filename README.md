@@ -67,26 +67,6 @@ chess-project/
 
 ---
 
-## Collision System
-
-### Head-On Collision
-Two pieces try to swap squares at the same time:
-```
-White rook:  e4 ──→ e6
-Black rook:  e6 ──→ e4   (same arrival time)
-```
-**Resolution:** The move submitted later (higher `seq`) is cancelled. The earlier move proceeds.
-
-### Simultaneous Arrival
-Two pieces arrive at the same square at the same time:
-```
-White bishop:  a1 ──→ e5
-Black knight:  h8 ──→ e5   (same arrival time)
-```
-**Resolution:** The piece already on the target is removed and a collision event is fired.
-
----
-
 ## GameEngine API
 
 | Method | Description |
