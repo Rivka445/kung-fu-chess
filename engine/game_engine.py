@@ -23,8 +23,8 @@ class GameEngine:
         if self.state.game_over:
             return
         piece = self.board.get_piece(source)
-        if self.state.is_busy(source):
-            logger.debug("move rejected — %s at %s is busy", piece.to_str(), source)
+        if not self.state.get_status(source).can_act():
+            logger.debug("move rejected — %s at %s is %s", piece.to_str(), source, self.state.get_status(source).name())
             return
         if not self.rules.is_legal(piece, source, target, self.board):
             logger.debug("illegal move %s: %s → %s", piece.to_str(), source, target)
@@ -40,7 +40,7 @@ class GameEngine:
             return
         if not self.board.is_inside(pos) or self.board.get_piece(pos) is None:
             return
-        if self.state.is_busy(pos):
+        if not self.state.get_status(pos).can_act():
             return
         self._arbiter.launch(pos, self.state)
 

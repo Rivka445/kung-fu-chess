@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from model.position import Position
+from model.piece_status import PieceStatus, IdleStatus, InFlightStatus, OnCooldownStatus
 
 
 @dataclass(frozen=True)
@@ -30,9 +31,15 @@ class GameState:
         self._seq += 1
         return self._seq
 
+    def get_status(self, pos: Position) -> PieceStatus:
+        if any(m.source == pos for m in self.pending_moves):
+            return InFlightStatus()
+        if any(a.cell == pos for a in self.airborne):
+            return InFlightStatus()
+        cooldown_until = self.cooldowns.get(pos, 0)
+        if cooldown_until > self.current_time:
+            return OnCooldownStatus(cooldown_until)
+        return IdleStatus()
+
     def is_busy(self, pos: Position) -> bool:
-        return (
-            any(m.source == pos for m in self.pending_moves) or
-            any(a.cell == pos for a in self.airborne) or
-            self.cooldowns.get(pos, 0) > self.current_time
-        )
+        return not self.get_status(pos).can_act()
