@@ -3,7 +3,11 @@ from logger import logger
 
 
 class LogListener(GameEventListener):
-    """Concrete subscriber that logs every game event."""
+    """
+    Concrete Observer that logs every game event.
+    Useful for debugging and producing a human-readable game transcript.
+    """
+
     def on_move_applied(self, source, target):
         logger.info("moved: %s → %s", source, target)
 

@@ -9,6 +9,12 @@ from logger import logger
 
 
 class GameEngine:
+    """
+    Central facade for the chess game.
+    Connects all subsystems: board, rules, real-time arbitration, and event listeners.
+    External code (controller, tests) interacts only with this class.
+    """
+
     def __init__(self, board: Board, rules: RuleEngine):
         self.board = board
         self.rules = rules
@@ -17,25 +23,47 @@ class GameEngine:
         self._arbiter = RealTimeArbiter(board, self._listeners)
 
     def add_listener(self, listener: GameEventListener):
+        """Register a listener to receive game events (moves, captures, promotions, collisions)."""
         self._listeners.append(listener)
 
     def request_move(self, source: Position, target: Position):
+        """
+        Submit a move request from source to target.
+        The move is queued as a PendingMove if all checks pass:
+          1. The game is still ongoing.
+          2. The piece at source is idle (not in-flight or on cooldown).
+          3. The move is legal according to chess rules.
+        Arrival time is calculated based on the distance of the move.
+        """
         if self.state.game_over:
             return
+
         piece = self.board.get_piece(source)
+
+        # Reject if the piece is busy (in-flight or on cooldown)
         if not self.state.get_status(source).can_act():
             logger.debug("move rejected — %s at %s is %s", piece.to_str(), source, self.state.get_status(source).name())
             return
+
+        # Reject if the move violates chess rules
         if not self.rules.is_legal(piece, source, target, self.board):
             logger.debug("illegal move %s: %s → %s", piece.to_str(), source, target)
             return
+
+        # Calculate arrival time based on Chebyshev distance (max of row/col delta)
         dr = abs(target.row - source.row)
         dc = abs(target.col - source.col)
         distance = max(dr, dc)
-        self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION * distance, self.state.next_seq()))
+        arrival = self.state.current_time + MOVE_DURATION * distance
+
+        self.state.pending_moves.append(PendingMove(source, target, arrival, self.state.next_seq()))
         logger.info("queued move %s: %s → %s", piece.to_str(), source, target)
 
     def request_jump(self, pos: Position):
+        """
+        Launch the piece at the given position into the air.
+        Ignored if the game is over, the position is invalid, or the piece is busy.
+        """
         if self.state.game_over:
             return
         if not self.board.is_inside(pos) or self.board.get_piece(pos) is None:
@@ -45,6 +73,11 @@ class GameEngine:
         self._arbiter.launch(pos, self.state)
 
     def advance_time(self, ms: int):
+        """
+        Advance the game clock by ms milliseconds.
+        Triggers the arbiter to process all moves and events due within this time window.
+        Ignored if the game is already over.
+        """
         if self.state.game_over:
             return
         self._arbiter.advance(ms, self.state)

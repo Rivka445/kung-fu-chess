@@ -4,7 +4,21 @@ from rules.piece_rules import MOVE_STRATEGIES
 
 
 class RuleEngine:
+    """
+    Facade for move legality checks.
+    Performs generic pre-checks (valid piece, inside board, non-trivial move)
+    before delegating to the piece-specific MoveStrategy.
+    """
+
     def is_legal(self, piece: Piece | None, source: Position, target: Position, board) -> bool:
+        """
+        Return True if the move from source to target is legal.
+        Checks in order:
+          1. A piece exists at the source.
+          2. The target is inside the board.
+          3. The source and target are different squares.
+          4. The piece-specific strategy approves the move.
+        """
         if piece is None:
             return False
         if not board.is_inside(target):
