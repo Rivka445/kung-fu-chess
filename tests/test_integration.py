@@ -125,3 +125,45 @@ def test_bishop_blocked_by_own_piece():
 def test_knight_jumps_over_blockers():
     out = run_script("Board:\nwN wP .\nwP . .\n. . .\nCommands:\nclick 50 50\nclick 150 250\nwait 3000\nprint board\n")
     assert out == ". wP .\nwP . .\n. wN ."
+
+
+# --- Pawn double-step (Tests 39, 40, 42) ---
+
+def test_pawn_double_step_from_start_row_white():
+    # Test 39: 5-row board, white pawn at row3 (start_row = len-2 = 3), moves 2 steps to row1
+    out = run_script(
+        "Board:\n. . .\n. . .\n. . .\n. wP .\n. . .\n"
+        "Commands:\nclick 150 350\nclick 150 150\nwait 2000\nprint board\n"
+    )
+    assert out == ". . .\n. wP .\n. . .\n. . .\n. . ."
+
+
+def test_pawn_double_step_from_start_row_black():
+    # Test 40: 5-row board, black pawn at row1 (start_row = 1), moves 2 steps to row3
+    out = run_script(
+        "Board:\n. . .\n. bP .\n. . .\n. . .\n. . .\n"
+        "Commands:\nclick 150 150\nclick 150 350\nwait 2000\nprint board\n"
+    )
+    assert out == ". . .\n. . .\n. . .\n. bP .\n. . ."
+
+
+def test_pawn_double_step_not_from_start_row_illegal():
+    # Test 42: 4-row board, white pawn at row3 (start_row = len-2 = 2), pawn at row3 != 2 -> illegal
+    out = run_script(
+        "Board:\n. . .\n. . .\n. . .\n. wP .\n"
+        "Commands:\nclick 150 350\nclick 150 150\nwait 2000\nprint board\n"
+    )
+    assert out == ". . .\n. . .\n. . .\n. wP ."
+
+
+# --- Pawn promotion (Test 45) ---
+
+def test_promoted_pawn_moves_as_queen():
+    # Test 45: 3-row board, white pawn at row1 (start_row = len-2 = 1)
+    # Pawn moves 1 step to row0 -> promotes to wQ (distance=1, arrival=1000ms)
+    # Then queen moves diagonally from row0 col1 to row1 col2 (distance=1, arrival=1000ms)
+    out = run_script(
+        "Board:\n. . .\n. wP .\n. . .\n"
+        "Commands:\nclick 150 150\nclick 150 50\nwait 1000\nclick 150 50\nclick 250 150\nwait 1000\nprint board\n"
+    )
+    assert out == ". . .\n. . wQ\n. . ."

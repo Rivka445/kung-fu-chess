@@ -7,6 +7,7 @@ class PendingMove:
     source: Position
     target: Position
     arrival: int
+    seq: int = 0
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,11 @@ class GameState:
     airborne: list = field(default_factory=list)
     cooldowns: dict = field(default_factory=dict)
     game_over: bool = False
+    _seq: int = field(default=0, compare=False, repr=False)
+
+    def next_seq(self) -> int:
+        self._seq += 1
+        return self._seq
 
     def is_busy(self, pos: Position) -> bool:
         return (

@@ -14,6 +14,16 @@ class RealTimeArbiter:
         ready, landed = self._partition(state)
         for a in landed:
             state.cooldowns[a.cell] = a.landing_time + MOVE_DURATION
+        # detect head-on pairs (A->B and B->A with same arrival): first-queued wins, cancel second
+        cancelled = set()
+        for m in ready:
+            for o in ready:
+                if (o is not m and o.source == m.target and o.target == m.source
+                        and o.arrival == m.arrival and id(o) not in cancelled):
+                    winner = m if m.seq < o.seq else o
+                    loser = o if winner is m else m
+                    cancelled.add(id(loser))
+        ready = [m for m in ready if id(m) not in cancelled]
         simultaneous = {
             m.target for m in ready
             if sum(1 for o in ready if o.target == m.target and o.arrival == m.arrival) > 1
@@ -55,4 +65,3 @@ class RealTimeArbiter:
         if piece is not None and piece.is_pawn:
             self.board.promote_pawn(move.target)
             for l in self._listeners: l.on_pawn_promoted(move.target)
-        state.cooldowns[move.target] = move.arrival + MOVE_DURATION

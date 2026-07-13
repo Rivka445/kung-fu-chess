@@ -22,7 +22,7 @@ class RuleEngine:
 
     def _pawn(self, piece: Piece, source: Position, target: Position, board) -> bool:
         direction = -1 if piece.color == Color.WHITE else 1
-        start_row = len(board.matrix) - 1 if piece.color == Color.WHITE else 0
+        start_row = len(board.matrix) - 2 if piece.color == Color.WHITE else 1
         dr = target.row - source.row
         dc = target.col - source.col
         target_piece = board.get_piece(target)

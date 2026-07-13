@@ -29,7 +29,10 @@ class GameEngine:
         if not self.rules.is_legal(piece, source, target, self.board):
             logger.debug("illegal move %s: %s → %s", piece.to_str(), source, target)
             return
-        self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION))
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        distance = max(dr, dc)
+        self.state.pending_moves.append(PendingMove(source, target, self.state.current_time + MOVE_DURATION * distance, self.state.next_seq()))
         logger.info("queued move %s: %s → %s", piece.to_str(), source, target)
 
     def request_jump(self, pos: Position):

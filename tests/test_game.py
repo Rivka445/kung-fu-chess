@@ -42,10 +42,11 @@ def test_piece_not_arrived_before_wait():
 
 
 def test_piece_arrives_after_wait():
+    # col0->col2 = distance 2, arrival = 2000ms
     engine, controller, board = make_game(["wR . ."])
     controller.click(50, 50, 100)
     controller.click(250, 50, 100)
-    engine.advance_time(1000)
+    engine.advance_time(2000)
     assert board.get_piece(Position(0, 2)) == Piece.from_str("wR")
     assert board.get_piece(Position(0, 0)) is None
 
@@ -100,46 +101,51 @@ def test_airborne_piece_lands_no_enemy():
 
 
 def test_airborne_captures_arriving_enemy():
+    # bR moves col2->col0 = distance 2, arrival=2000ms
     engine, controller, board = make_game([". . .", "wK . bR", ". . ."])
     controller.jump(50, 150, 100)
     controller.click(250, 150, 100)
     controller.click(50, 150, 100)
-    engine.advance_time(1000)
+    engine.advance_time(2000)
     assert board.get_piece(Position(1, 0)) == Piece.from_str("wK")
     assert board.get_piece(Position(1, 2)) is None
 
 
 def test_jump_too_late_does_not_save():
+    # bR moves col2->col0 = distance 2, arrival=2000ms
     engine, controller, board = make_game([". . .", "wK . bR", ". . ."])
     controller.click(250, 150, 100)
     controller.click(50, 150, 100)
-    engine.advance_time(1000)
+    engine.advance_time(2000)
     controller.jump(50, 150, 100)
     assert board.get_piece(Position(1, 0)) == Piece.from_str("bR")
 
 
 def test_cannot_jump_while_moving():
+    # col0->col2 = distance 2, arrival=2000ms; advance 500 then jump, then 2000 more
     engine, controller, board = make_game(["wR . ."])
     controller.click(50, 50, 100)
     controller.click(250, 50, 100)
     engine.advance_time(500)
     controller.jump(50, 50, 100)
-    engine.advance_time(1500)
+    engine.advance_time(2000)
     assert board.get_piece(Position(0, 2)) == Piece.from_str("wR")
     assert len(engine.state.airborne) == 0
 
 
 def test_airborne_does_not_capture_same_color():
+    # wR moves col2->col0 = distance 2, arrival=2000ms
     engine, controller, board = make_game([". . .", "wK . wR", ". . ."])
     controller.jump(50, 150, 100)
     controller.click(250, 150, 100)
     controller.click(50, 150, 100)
-    engine.advance_time(1000)
+    engine.advance_time(2000)
     assert board.get_piece(Position(1, 0)) == Piece.from_str("wK")
     assert board.get_piece(Position(1, 2)) == Piece.from_str("wR")
 
 
 def test_enemy_arrives_after_landing_captures_normally():
+    # bR moves col3->col0 = distance 3, arrival=3000ms
     engine, controller, board = make_game([". . . .", "wK . . bR", ". . . ."])
     controller.jump(50, 150, 100)
     engine.advance_time(1000)
@@ -150,6 +156,7 @@ def test_enemy_arrives_after_landing_captures_normally():
 
 
 def test_two_rooks_same_columns_both_move():
+    # col0->col2 = distance 2, arrival=2000ms
     engine, controller, board = make_game(["wR . .", ". . .", "bR . ."])
     controller.click(50, 50, 100)
     controller.click(250, 50, 100)
@@ -158,3 +165,57 @@ def test_two_rooks_same_columns_both_move():
     engine.advance_time(2000)
     assert board.get_piece(Position(0, 2)) == Piece.from_str("wR")
     assert board.get_piece(Position(2, 2)) == Piece.from_str("bR")
+
+
+# --- Real-time: mid-flight and cooldown (Tests 26, 29, 30, 31, 32) ---
+
+def test_piece_still_at_source_mid_flight():
+    # Test 26: col0->col2 takes 2000ms; at 1000ms piece still at source
+    engine, controller, board = make_game(["wR . ."])
+    controller.click(50, 50, 100)
+    controller.click(250, 50, 100)
+    engine.advance_time(1000)
+    assert board.get_piece(Position(0, 0)) == Piece.from_str("wR")
+    assert board.get_piece(Position(0, 2)) is None
+
+
+def test_piece_arrives_exactly_at_move_duration():
+    # Test 29: col0->col1 = distance 1, arrives at exactly 1000ms
+    engine, controller, board = make_game(["wR . ."])
+    controller.click(50, 50, 100)
+    controller.click(150, 50, 100)
+    engine.advance_time(1000)
+    assert board.get_piece(Position(0, 1)) == Piece.from_str("wR")
+    assert board.get_piece(Position(0, 0)) is None
+
+
+def test_piece_can_move_again_after_landing():
+    # Test 30: no cooldown on regular moves — piece can move again immediately after landing
+    engine, controller, board = make_game(["wR . . ."])
+    controller.click(50, 50, 100)
+    controller.click(150, 50, 100)
+    engine.advance_time(1000)
+    controller.click(150, 50, 100)
+    controller.click(250, 50, 100)
+    assert len(engine.state.pending_moves) == 1
+
+
+def test_piece_can_move_after_cooldown_expires():
+    # Test 31: piece can move again after landing (no cooldown)
+    engine, controller, board = make_game(["wR . . ."])
+    controller.click(50, 50, 100)
+    controller.click(150, 50, 100)
+    engine.advance_time(1000)
+    engine.advance_time(1000)
+    controller.click(150, 50, 100)
+    controller.click(250, 50, 100)
+    assert len(engine.state.pending_moves) == 1
+
+
+def test_piece_not_at_target_before_arrival():
+    # Test 32: col0->col1 = 1000ms; at 500ms target is still empty
+    engine, controller, board = make_game(["wR . ."])
+    controller.click(50, 50, 100)
+    controller.click(150, 50, 100)
+    engine.advance_time(500)
+    assert board.get_piece(Position(0, 1)) is None

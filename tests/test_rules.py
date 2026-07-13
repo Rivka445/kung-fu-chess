@@ -73,9 +73,9 @@ def test_white_double_from_start():
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
-                    ". . . . . . . .",
-                    "wP . . . . . . ."])
-    assert engine.is_legal(p("wP"), pos(7, 0), pos(5, 0), b)
+                    "wP . . . . . . .",
+                    ". . . . . . . ."])
+    assert engine.is_legal(p("wP"), pos(6, 0), pos(4, 0), b)
 
 def test_white_double_not_from_start():
     b = make_board([". . . . . . . .",
@@ -113,15 +113,15 @@ def test_black_forward():
     assert engine.is_legal(p("bP"), pos(1, 0), pos(2, 0), b)
 
 def test_black_double_from_start():
-    b = make_board(["bP . . . . . . .",
-                    ". . . . . . . .",
+    b = make_board([". . . . . . . .",
+                    "bP . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . ."])
-    assert engine.is_legal(p("bP"), pos(0, 0), pos(2, 0), b)
+    assert engine.is_legal(p("bP"), pos(1, 0), pos(3, 0), b)
 
 def test_white_backward_illegal(): assert not engine.is_legal(p("wP"), pos(4, 0), pos(5, 0), _empty)
 
@@ -131,7 +131,7 @@ def test_white_double_blocked():
                     ". . . . . . . .",
                     ". . . . . . . .",
                     ". . . . . . . .",
-                    ". . . . . . . .",
                     "bP . . . . . . .",
-                    "wP . . . . . . ."])
-    assert not engine.is_legal(p("wP"), pos(7, 0), pos(5, 0), b)
+                    "wP . . . . . . .",
+                    ". . . . . . . ."])
+    assert not engine.is_legal(p("wP"), pos(6, 0), pos(4, 0), b)
