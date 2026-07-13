@@ -33,6 +33,10 @@ class Board:
         return False
 
     def path(self, source: Position, target: Position):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        if dr != 0 and dc != 0 and dr != dc:
+            raise ValueError(f"path() called with non-linear move: {source} -> {target}")
         def step(d): return 1 if d > 0 else (-1 if d < 0 else 0)
         rs = step(target.row - source.row)
         cs = step(target.col - source.col)
