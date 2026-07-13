@@ -14,8 +14,12 @@ class Controller:
         self._selected: Position | None = None  # Currently selected square (first click)
 
     def click(self, x: int, y: int, cell_size: int):
+        """Handle a click at pixel coordinates — converts to Position and delegates."""
+        self.click_pos(pixel_to_pos(x, y, cell_size))
+
+    def click_pos(self, pos: Position):
         """
-        Handle a click at pixel coordinates (x, y).
+        Handle a click at a board position.
         First click: selects a piece.
         Second click: submits a move from the selected square to the clicked square.
         If the second click lands on a friendly piece, it re-selects instead.
@@ -25,8 +29,6 @@ class Controller:
 
         if state.game_over:
             return
-
-        pos = pixel_to_pos(x, y, cell_size)
         if not board.is_inside(pos):
             return
 
@@ -49,6 +51,9 @@ class Controller:
             self._selected = None
 
     def jump(self, x: int, y: int, cell_size: int):
-        """Launch the piece at pixel coordinates (x, y) into the air."""
-        pos = pixel_to_pos(x, y, cell_size)
+        """Handle a jump at pixel coordinates — converts to Position and delegates."""
+        self._engine.request_jump(pixel_to_pos(x, y, cell_size))
+
+    def jump_pos(self, pos: Position):
+        """Launch the piece at the given board position into the air."""
         self._engine.request_jump(pos)
