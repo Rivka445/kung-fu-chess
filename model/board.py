@@ -3,11 +3,11 @@ from model.position import Position
 
 
 class Board:
-    def __init__(self):
-        self.matrix = []
-        self.expected_cols = None
+    def __init__(self) -> None:
+        self.matrix: list[list[Piece | None]] = []
+        self.expected_cols: int | None = None
 
-    def add_parsed_row(self, row: list):
+    def add_parsed_row(self, row: list[Piece | None]) -> None:
         if self.expected_cols is None:
             self.expected_cols = len(row)
         self.matrix.append(row)
@@ -17,13 +17,13 @@ class Board:
             return False
         return 0 <= pos.row < len(self.matrix) and 0 <= pos.col < self.expected_cols
 
-    def get_piece(self, pos: Position):
+    def get_piece(self, pos: Position) -> Piece | None:
         return self.matrix[pos.row][pos.col]
 
-    def set_piece(self, pos: Position, piece):
+    def set_piece(self, pos: Position, piece: Piece | None) -> None:
         self.matrix[pos.row][pos.col] = piece
 
-    def same_color(self, p1, p2) -> bool:
+    def same_color(self, p1: Piece | None, p2: Piece | None) -> bool:
         return p1 is not None and p2 is not None and p1.same_color(p2)
 
     def intermediate_positions(self, source: Position, target: Position) -> list[Position]:

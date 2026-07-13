@@ -13,7 +13,15 @@ class GameApplication:
     controller: Controller
 
 
+def build_game(board: Board, listeners: list[GameEventListener] | None = None) -> GameApplication:
+    engine = GameEngine(board, RuleEngine())
+    for listener in (listeners or []):
+        engine.add_listener(listener)
+    return GameApplication(engine=engine, controller=Controller(engine))
+
+
 class GameBuilder:
+    """Kept for script_runner compatibility."""
     def __init__(self):
         self._board = Board()
         self._listeners: list[GameEventListener] = []
@@ -27,7 +35,4 @@ class GameBuilder:
         return self
 
     def build(self) -> GameApplication:
-        engine = GameEngine(self._board, RuleEngine())
-        for listener in self._listeners:
-            engine.add_listener(listener)
-        return GameApplication(engine=engine, controller=Controller(engine))
+        return build_game(self._board, self._listeners)

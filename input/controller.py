@@ -1,5 +1,6 @@
 from engine.game_engine import GameEngine
 from input.board_mapper import pixel_to_pos
+from model.position import Position
 
 
 class Controller:
