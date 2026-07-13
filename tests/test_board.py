@@ -12,7 +12,7 @@ from board_io.board_parser import parse_row
 def make_board(rows):
     board = ChessBoard()
     for row in rows:
-        board.add_parsed_row(parse_row(row))
+        board.add_parsed_row(parse_row(row, board.expected_cols))
     return board
 
 

@@ -38,4 +38,4 @@ def run(stream=None):
                 print(f"ERROR {code}")
                 sys.exit(0)
         elif in_commands:
-            execute(line_str, app.controller, app.engine, CELL_SIZE)
+            execute(line_str, app.controller, app.engine)

@@ -9,7 +9,7 @@ from exceptions import EmptyRowError, RowWidthMismatchError, UnknownTokenError
 
 
 def test_valid_row():
-    row = parse_row("wR . bK")
+    row = parse_row("wR . bK", None)
     assert row[0] == Piece.from_str("wR")
     assert row[1] is None
     assert row[2] == Piece.from_str("bK")
@@ -17,7 +17,7 @@ def test_valid_row():
 
 def test_empty_row_raises():
     with pytest.raises(EmptyRowError):
-        parse_row("")
+        parse_row("", None)
 
 
 def test_width_mismatch_raises():
@@ -27,14 +27,14 @@ def test_width_mismatch_raises():
 
 def test_unknown_token_raises():
     with pytest.raises(UnknownTokenError):
-        parse_row("wR XX bK")
+        parse_row("wR XX bK", None)
 
 
 def test_invalid_color_raises():
     with pytest.raises(UnknownTokenError):
-        parse_row("xR . .")
+        parse_row("xR . .", None)
 
 
 def test_invalid_type_raises():
     with pytest.raises(UnknownTokenError):
-        parse_row("wX . .")
+        parse_row("wX . .", None)

@@ -14,7 +14,7 @@ from input.controller import Controller
 def make_game(rows):
     board = Board()
     for row in rows:
-        board.add_parsed_row(parse_row(row))
+        board.add_parsed_row(parse_row(row, board.expected_cols))
     engine = GameEngine(board, RuleEngine())
     controller = Controller(engine)
     return engine, controller, board
