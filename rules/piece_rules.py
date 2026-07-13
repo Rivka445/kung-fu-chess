@@ -1,26 +1,63 @@
 from abc import ABC, abstractmethod
-from model.piece import PieceType
+from model.piece import PieceType, Color
 
 
 class MoveStrategy(ABC):
     @abstractmethod
-    def is_legal(self, dr: int, dc: int) -> bool: ...
+    def is_legal(self, piece, source, target, board) -> bool: ...
 
 
 class KingStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr <= 1 and dc <= 1
+    def is_legal(self, piece, source, target, board):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        return dr <= 1 and dc <= 1 and not board.same_color(piece, board.get_piece(target))
+
 
 class RookStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == 0 or dc == 0
+    def is_legal(self, piece, source, target, board):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        return (dr == 0 or dc == 0) and not board.same_color(piece, board.get_piece(target)) and not board.has_blockers(source, target)
+
 
 class BishopStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == dc
+    def is_legal(self, piece, source, target, board):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        return dr == dc and not board.same_color(piece, board.get_piece(target)) and not board.has_blockers(source, target)
+
 
 class QueenStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return dr == 0 or dc == 0 or dr == dc
+    def is_legal(self, piece, source, target, board):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        return (dr == 0 or dc == 0 or dr == dc) and not board.same_color(piece, board.get_piece(target)) and not board.has_blockers(source, target)
+
 
 class KnightStrategy(MoveStrategy):
-    def is_legal(self, dr, dc): return (dr, dc) in {(2, 1), (1, 2)}
+    def is_legal(self, piece, source, target, board):
+        dr = abs(target.row - source.row)
+        dc = abs(target.col - source.col)
+        return (dr, dc) in {(2, 1), (1, 2)} and not board.same_color(piece, board.get_piece(target))
+
+
+class PawnStrategy(MoveStrategy):
+    def is_legal(self, piece, source, target, board):
+        direction = -1 if piece.color == Color.WHITE else 1
+        start_row = len(board.matrix) - 2 if piece.color == Color.WHITE else 1
+        dr = target.row - source.row
+        dc = target.col - source.col
+        target_piece = board.get_piece(target)
+        if dc == 0:
+            if dr == direction:
+                return target_piece is None
+            if dr == 2 * direction and source.row == start_row:
+                return target_piece is None and not board.has_blockers(source, target)
+            return False
+        if abs(dc) == 1 and dr == direction:
+            return target_piece is not None and not piece.same_color(target_piece)
+        return False
 
 
 MOVE_STRATEGIES: dict[PieceType, MoveStrategy] = {
@@ -29,4 +66,5 @@ MOVE_STRATEGIES: dict[PieceType, MoveStrategy] = {
     PieceType.BISHOP: BishopStrategy(),
     PieceType.QUEEN: QueenStrategy(),
     PieceType.KNIGHT: KnightStrategy(),
+    PieceType.PAWN: PawnStrategy(),
 }
