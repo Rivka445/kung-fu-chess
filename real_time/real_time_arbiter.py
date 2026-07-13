@@ -1,67 +1,29 @@
-from model.game_state import GameState, PendingMove, AirbornePiece
+from model.game_state import GameState, AirbornePiece
 from model.position import Position
 from constants import MOVE_DURATION
+from real_time.time_partitioner import TimePartitioner
+from real_time.collision_resolver import CollisionResolver
+from real_time.move_applier import MoveApplier
 from logger import logger
 
 
 class RealTimeArbiter:
     def __init__(self, board, listeners):
-        self.board = board
-        self._listeners = listeners
+        self._board = board
+        self._partitioner = TimePartitioner()
+        self._collision = CollisionResolver()
+        self._applier = MoveApplier(board, listeners)
 
     def advance(self, ms: int, state: GameState):
         state.current_time += ms
-        ready, landed = self._partition(state)
+        ready, landed = self._partitioner.partition(state)
         for a in landed:
             state.cooldowns[a.cell] = a.landing_time + MOVE_DURATION
-        # detect head-on pairs (A->B and B->A with same arrival): first-queued wins, cancel second
-        cancelled = set()
-        for m in ready:
-            for o in ready:
-                if (o is not m and o.source == m.target and o.target == m.source
-                        and o.arrival == m.arrival and id(o) not in cancelled):
-                    winner = m if m.seq < o.seq else o
-                    loser = o if winner is m else m
-                    cancelled.add(id(loser))
-        ready = [m for m in ready if id(m) not in cancelled]
-        simultaneous = {
-            m.target for m in ready
-            if sum(1 for o in ready if o.target == m.target and o.arrival == m.arrival) > 1
-        }
+        ready = self._collision.resolve_head_on(ready)
+        simultaneous = self._collision.find_simultaneous(ready)
         for move in sorted(ready, key=lambda m: m.arrival):
-            self._apply(move, simultaneous, landed, state)
+            self._applier.apply(move, simultaneous, landed, state)
 
     def launch(self, pos: Position, state: GameState):
         state.airborne.append(AirbornePiece(pos, state.current_time + MOVE_DURATION))
-        logger.info("jump: %s launched from %s", self.board.get_piece(pos).to_str(), pos)
-
-    def _partition(self, state: GameState):
-        ready = [m for m in state.pending_moves if m.arrival <= state.current_time]
-        state.pending_moves = [m for m in state.pending_moves if m.arrival > state.current_time]
-        landed = [a for a in state.airborne if a.landing_time <= state.current_time]
-        state.airborne = [a for a in state.airborne if a.landing_time > state.current_time]
-        return ready, landed
-
-    def _apply(self, move: PendingMove, simultaneous: set, landed: list, state: GameState):
-        if move.target in simultaneous:
-            self.board.remove_piece(move.target)
-            for l in self._listeners: l.on_collision(move.target)
-            return
-        source_piece = self.board.get_piece(move.source)
-        target_piece = self.board.get_piece(move.target)
-        airborne_here = next((a for a in state.airborne + landed if a.cell == move.target), None)
-        if airborne_here and target_piece is not None and not source_piece.same_color(target_piece):
-            self.board.remove_piece(move.source)
-            for l in self._listeners: l.on_collision(move.target)
-            return
-        if target_piece is not None and source_piece.same_color(target_piece):
-            return
-        self.board.move_piece(move.source, move.target)
-        for l in self._listeners: l.on_move_applied(move.source, move.target)
-        if target_piece is not None and target_piece.is_king:
-            for l in self._listeners: l.on_king_captured(move.target)
-            state.game_over = True
-        piece = self.board.get_piece(move.target)
-        if piece is not None and piece.is_pawn:
-            self.board.promote_pawn(move.target)
-            for l in self._listeners: l.on_pawn_promoted(move.target)
+        logger.info("jump: %s launched from %s", self._board.get_piece(pos).to_str(), pos)
