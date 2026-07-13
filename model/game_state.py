@@ -20,10 +20,9 @@ class AirbornePiece:
 @dataclass
 class GameState:
     current_time: int = 0
-    selected: Position = None
-    pending_moves: list = field(default_factory=list)
-    airborne: list = field(default_factory=list)
-    cooldowns: dict = field(default_factory=dict)
+    pending_moves: list[PendingMove] = field(default_factory=list)
+    airborne: list[AirbornePiece] = field(default_factory=list)
+    cooldowns: dict[Position, int] = field(default_factory=dict)
     game_over: bool = False
     _seq: int = field(default=0, compare=False, repr=False)
 

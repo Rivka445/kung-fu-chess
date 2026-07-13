@@ -5,6 +5,7 @@ from input.board_mapper import pixel_to_pos
 class Controller:
     def __init__(self, engine: GameEngine):
         self._engine = engine
+        self._selected: Position | None = None
 
     def click(self, x: int, y: int, cell_size: int):
         state = self._engine.state
@@ -15,16 +16,16 @@ class Controller:
         if not board.is_inside(pos):
             return
         piece = board.get_piece(pos)
-        if state.selected is None:
+        if self._selected is None:
             if piece is not None:
-                state.selected = pos
+                self._selected = pos
             return
-        selected_piece = board.get_piece(state.selected)
+        selected_piece = board.get_piece(self._selected)
         if piece is not None and board.same_color(selected_piece, piece):
-            state.selected = pos
+            self._selected = pos
         else:
-            self._engine.request_move(state.selected, pos)
-            state.selected = None
+            self._engine.request_move(self._selected, pos)
+            self._selected = None
 
     def jump(self, x: int, y: int, cell_size: int):
         pos = pixel_to_pos(x, y, cell_size)

@@ -23,7 +23,7 @@ def make_game(rows):
 def test_click_selects_piece():
     engine, controller, _ = make_game(["wR . ."])
     controller.click(50, 50, 100)
-    assert engine.state.selected == Position(0, 0)
+    assert controller._selected == Position(0, 0)
 
 
 def test_click_moves_piece_to_pending():
@@ -84,7 +84,7 @@ def test_blocked_rook_cannot_move():
 def test_click_outside_board_ignored():
     engine, controller, _ = make_game(["wR . ."])
     controller.click(9999, 9999, 100)
-    assert engine.state.selected is None
+    assert controller._selected is None
 
 
 def test_jump_adds_airborne():
