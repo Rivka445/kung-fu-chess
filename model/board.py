@@ -26,11 +26,11 @@ class Board:
     def same_color(self, p1, p2) -> bool:
         return p1 is not None and p2 is not None and p1.same_color(p2)
 
+    def intermediate_positions(self, source: Position, target: Position) -> list[Position]:
+        return self.path(source, target)[:-1]
+
     def has_blockers(self, source: Position, target: Position) -> bool:
-        for pos in self.path(source, target)[:-1]:
-            if self.get_piece(pos) is not None:
-                return True
-        return False
+        return any(self.get_piece(pos) is not None for pos in self.intermediate_positions(source, target))
 
     def path(self, source: Position, target: Position):
         dr = abs(target.row - source.row)
