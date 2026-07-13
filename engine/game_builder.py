@@ -1,9 +1,16 @@
+from dataclasses import dataclass
 from model.board import Board
 from board_io.board_parser import parse_row
 from rules.rule_engine import RuleEngine
 from engine.game_engine import GameEngine
 from input.controller import Controller
 from events.base import GameEventListener
+
+
+@dataclass(frozen=True)
+class GameApplication:
+    engine: GameEngine
+    controller: Controller
 
 
 class GameBuilder:
@@ -19,8 +26,8 @@ class GameBuilder:
         self._listeners.append(listener)
         return self
 
-    def build(self) -> tuple[GameEngine, Controller]:
+    def build(self) -> GameApplication:
         engine = GameEngine(self._board, RuleEngine())
         for listener in self._listeners:
             engine.add_listener(listener)
-        return engine, Controller(engine)
+        return GameApplication(engine=engine, controller=Controller(engine))

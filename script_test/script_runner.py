@@ -1,5 +1,5 @@
 import sys
-from engine.game_builder import GameBuilder
+from engine.game_builder import GameBuilder, GameApplication
 from script_test.script_parser import execute
 from events.log_listener import LogListener
 from constants import CELL_SIZE
@@ -12,8 +12,7 @@ def run(stream=None):
         stream = sys.stdin
 
     builder = GameBuilder().with_listener(LogListener())
-    engine = None
-    controller = None
+    app: GameApplication | None = None
 
     in_board = False
     in_commands = False
@@ -27,7 +26,7 @@ def run(stream=None):
             continue
         if line_str == "Commands:":
             in_board, in_commands = False, True
-            engine, controller = builder.build()
+            app = builder.build()
             continue
         if in_board:
             try:
@@ -39,4 +38,4 @@ def run(stream=None):
                 print(f"ERROR {code}")
                 sys.exit(0)
         elif in_commands:
-            execute(line_str, controller, engine, CELL_SIZE)
+            execute(line_str, app.controller, app.engine, CELL_SIZE)
