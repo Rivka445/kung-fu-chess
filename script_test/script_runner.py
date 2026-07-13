@@ -1,9 +1,5 @@
 import sys
-from model.board import Board
-from board_io.board_parser import parse_row
-from rules.rule_engine import RuleEngine
-from engine.game_engine import GameEngine
-from input.controller import Controller
+from engine.game_builder import GameBuilder
 from script_test.script_parser import execute
 from events.log_listener import LogListener
 from constants import CELL_SIZE
@@ -14,10 +10,10 @@ from logger import logger
 def run(stream=None):
     if stream is None:
         stream = sys.stdin
-    board = Board()
-    engine = GameEngine(board, RuleEngine())
-    engine.add_listener(LogListener())
-    controller = Controller(engine)
+
+    builder = GameBuilder().with_listener(LogListener())
+    engine = None
+    controller = None
 
     in_board = False
     in_commands = False
@@ -31,10 +27,11 @@ def run(stream=None):
             continue
         if line_str == "Commands:":
             in_board, in_commands = False, True
+            engine, controller = builder.build()
             continue
         if in_board:
             try:
-                board.add_parsed_row(parse_row(line_str, board.expected_cols))
+                builder.with_row(line_str)
             except BoardParseError as e:
                 logger.error("board parse error: %s", e)
                 code = type(e).__name__.replace("Error", "")
