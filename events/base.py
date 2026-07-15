@@ -13,6 +13,9 @@ class GameEventListener(ABC):
     def on_move_applied(self, source: Position, target: Position): ...
     """Called when a piece successfully moves from source to target."""
 
+    def on_capture(self, captured_piece, capturing_color): ...
+    """Called when a piece is captured (before the board is updated)."""
+
     def on_king_captured(self, pos: Position): ...
     """Called when a king is captured — signals game over."""
 

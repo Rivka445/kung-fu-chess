@@ -13,9 +13,10 @@ class Controller:
         self._engine = engine
         self._selected: Position | None = None  # Currently selected square (first click)
 
-    def click(self, x: int, y: int, cell_size: int):
+    def click(self, x: int, y: int, cell_size: int,
+              offset_x: int = 0, offset_y: int = 0):
         """Handle a click at pixel coordinates — converts to Position and delegates."""
-        self.click_pos(pixel_to_pos(x, y, cell_size))
+        self.click_pos(pixel_to_pos(x, y, cell_size, offset_x, offset_y))
 
     def click_pos(self, pos: Position):
         """

@@ -2,7 +2,10 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from script_test.script_runner import run
-
 if __name__ == "__main__":
-    run()
+    if "--gui" in sys.argv:
+        from graphics.gui_app import run
+        run()
+    else:
+        from script_test.script_runner import run
+        run()
