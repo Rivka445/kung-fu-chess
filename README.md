@@ -24,6 +24,11 @@ chess-project/
 ├── engine/              # Game assembly — GameEngine facade + GameBuilder
 ├── events/              # Observer Pattern — game event notifications
 ├── input/               # Player input — click handling and board mapping
+├── graphics/            # UI layer — rendering, sprites, GUI loop
+│   ├── gui_app.py       # Main game loop (OpenCV window, mouse, ~60 fps)
+│   ├── renderer.py      # Draws board, pieces, panels, selection highlight
+│   ├── sprite.py        # SpriteSheet — animated frames per piece state
+│   └── img.py           # Img wrapper — load, draw, blend images
 ├── board_io/            # Board parsing and printing
 ├── script_test/         # Script-based simulation runner
 ├── tests/               # Unit and integration tests
@@ -36,6 +41,8 @@ chess-project/
 
 ```
 ┌─────────────────────────────────────────┐
+│         graphics (Renderer, GUIApp)     │  ← UI — renders board & pieces at ~60fps
+├─────────────────────────────────────────┤
 │           script_test / input           │  ← Player input & script commands
 ├─────────────────────────────────────────┤
 │              GameEngine                 │  ← Central facade
@@ -64,6 +71,7 @@ chess-project/
 | Facade | `GameEngine`, `RuleEngine` | Simple interfaces hiding internal complexity |
 | Builder | `GameBuilder` | Fluent API for constructing a game row by row |
 | Command | `script_parser.py` | Each script command is an encapsulated object registered by name |
+| Cache | `sprite.py` | `SpriteSheet` instances are cached by piece type — no disk reads per frame |
 
 ---
 
@@ -116,6 +124,21 @@ print board
 | `wait <ms>` | Advance the game clock by the given milliseconds |
 | `jump <sq>` | Launch the piece at the given square into the air |
 | `print board` | Print the current board state to stdout |
+
+---
+
+## Running the GUI
+
+```bash
+python main.py
+```
+
+| Control | Action |
+|---------|--------|
+| Left click a piece | Select it |
+| Left click a target square | Move the selected piece |
+| Right click a piece | Launch it into the air (jump) |
+| `Q` or `ESC` | Quit |
 
 ---
 
