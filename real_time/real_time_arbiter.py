@@ -67,7 +67,10 @@ class RealTimeArbiter:
             return
 
         # Case 4: normal move — execute and check for special outcomes
+        if target_piece is not None:
+            for l in self._listeners: l.on_capture(target_piece, source_piece.color)
         self._board.move_piece(move.source, move.target)
+        state.cooldowns[move.target] = move.arrival + MOVE_DURATION
         for l in self._listeners: l.on_move_applied(move.source, move.target)
 
         # Check if the captured piece was a king

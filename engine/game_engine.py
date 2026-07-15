@@ -40,6 +40,9 @@ class GameEngine:
 
         piece = self.board.get_piece(source)
 
+        if piece is None:
+            return
+
         # Reject if the piece is busy (in-flight or on cooldown)
         if not self.state.get_status(source).can_act():
             logger.debug("move rejected — %s at %s is %s", piece.to_str(), source, self.state.get_status(source).name())
