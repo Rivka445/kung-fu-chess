@@ -3,7 +3,7 @@ import pathlib
 from graphics.img import Img
 from constants import MOVE_DURATION
 
-PIECES_DIR = pathlib.Path(r"C:\Users\user1\Downloads\assets (2)\assets\images\pieces")
+PIECES_DIR = pathlib.Path(__file__).parent.parent / "assets" / "assets" / "images" / "pieces"
 
 # Maps (piece_type_char, color_char) -> folder name  e.g. ('P','W') -> 'PW'
 # piece type chars match PieceType.value: K Q R B N P

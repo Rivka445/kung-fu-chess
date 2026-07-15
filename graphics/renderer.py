@@ -9,7 +9,7 @@ from model.position import Position
 from model.piece import Color
 from constants import CELL_SIZE, MOVE_DURATION
 
-BOARD_IMG  = pathlib.Path(r"C:\Users\user1\Downloads\assets (2)\assets\images\board.png")
+BOARD_IMG  = pathlib.Path(__file__).parent.parent / "assets" / "assets" / "images" / "board.png"
 BOARD_SIZE = CELL_SIZE * 8   # 800
 SIDEBAR_W  = 260             # width of each side panel
 COORD_SIZE = 30              # pixels for coordinate labels around the board
