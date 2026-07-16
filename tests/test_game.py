@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from model.position import Position
 from model.piece import Piece
 from model.board import Board
@@ -190,14 +186,16 @@ def test_piece_arrives_exactly_at_move_duration():
 
 
 def test_piece_can_move_again_after_landing():
-    # Test 30: no cooldown on regular moves — piece can move again immediately after landing
+    # Test 30: piece has cooldown after landing (cooldown_until = arrival + MOVE_DURATION)
+    # col0->col1 = distance 1, arrival=1000ms, cooldown_until=2000ms
+    # at t=1000 piece is on cooldown — cannot move yet
     engine, controller, board = make_game(["wR . . ."])
     controller.click(50, 50, 100)
     controller.click(150, 50, 100)
     engine.advance_time(1000)
     controller.click(150, 50, 100)
     controller.click(250, 50, 100)
-    assert len(engine.state.pending_moves) == 1
+    assert len(engine.state.pending_moves) == 0  # still on cooldown
 
 
 def test_piece_can_move_after_cooldown_expires():

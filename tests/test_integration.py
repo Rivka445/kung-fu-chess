@@ -1,7 +1,5 @@
 import sys
-import os
 import io
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 from io import StringIO
@@ -161,9 +159,9 @@ def test_pawn_double_step_not_from_start_row_illegal():
 def test_promoted_pawn_moves_as_queen():
     # Test 45: 3-row board, white pawn at row1 (start_row = len-2 = 1)
     # Pawn moves 1 step to row0 -> promotes to wQ (distance=1, arrival=1000ms)
-    # Then queen moves diagonally from row0 col1 to row1 col2 (distance=1, arrival=1000ms)
+    # Queen is on cooldown until 2000ms — wait for cooldown then move diagonally
     out = run_script(
         "Board:\n. . .\n. wP .\n. . .\n"
-        "Commands:\nclick 150 150\nclick 150 50\nwait 1000\nclick 150 50\nclick 250 150\nwait 1000\nprint board\n"
+        "Commands:\nclick 150 150\nclick 150 50\nwait 2000\nclick 150 50\nclick 250 150\nwait 1000\nprint board\n"
     )
     assert out == ". . .\n. . wQ\n. . ."
