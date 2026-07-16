@@ -154,11 +154,12 @@ class Renderer:
 
     def _draw_stationary(self, canvas: Img, board: Board, state: GameState, layout: Layout):
         moving_sources = {m.source for m in state.pending_moves}
+        airborne_cells = {a.cell for a in state.airborne}
         for row in range(len(board.matrix)):
             for col in range(len(board.matrix[row])):
                 pos   = Position(row, col)
                 piece = board.get_piece(pos)
-                if piece is None or pos in moving_sources:
+                if piece is None or pos in moving_sources or pos in airborne_cells:
                     continue
                 self._draw_stationary_piece(canvas, pos, piece, state, layout)
 
@@ -166,12 +167,31 @@ class Renderer:
         sheet = get_sprite_sheet(piece)
         s     = piece_state(pos, state)
         start = _state_start(pos, s, state)
-        frame = sheet.get_frame(s, state.current_time, start)
+        frame = sheet.get_frame(s, state.current_time, start, layout.cell_size)
         x, y  = _pos_to_px(pos, layout)
         if piece.color == Color.BLACK:
             frame.draw_on_with_outline(canvas, x, y)
         else:
             frame.draw_on(canvas, x, y)
+        self._draw_cooldown_bar(canvas.img, pos, state, layout)
+
+    def _draw_cooldown_bar(self, bg, pos: Position, state: GameState, layout: Layout):
+        cooldown_until = state.cooldowns.get(pos, 0)
+        if cooldown_until <= state.current_time:
+            return
+        remaining = cooldown_until - state.current_time
+        total     = cooldown_until - (cooldown_until - MOVE_DURATION)
+        ratio     = max(0.0, remaining / total)
+        x, y  = _pos_to_px(pos, layout)
+        h = int(layout.cell_size * ratio)
+        if h > 0:
+            overlay = bg[y:y + h, x:x + layout.cell_size].copy()
+            overlay[:, :, :3] = (40, 40, 40)
+            overlay[:, :, 3]  = 180
+            alpha = 0.45
+            bg[y:y + h, x:x + layout.cell_size, :3] = (
+                (1 - alpha) * bg[y:y + h, x:x + layout.cell_size, :3] + alpha * overlay[:, :, :3]
+            ).astype(np.uint8)
 
     def _draw_moving(self, canvas: Img, board: Board, state: GameState, layout: Layout):
         for move in state.pending_moves:
@@ -182,7 +202,7 @@ class Renderer:
             distance = max(abs(move.target.row - move.source.row),
                            abs(move.target.col - move.source.col))
             start    = move.arrival - MOVE_DURATION * distance
-            frame    = sheet.get_frame("move", state.current_time, start)
+            frame    = sheet.get_frame("move", state.current_time, start, layout.cell_size)
             x, y     = _interpolated_px(move, state.current_time, layout)
             if piece.color == Color.BLACK:
                 frame.draw_on_with_outline(canvas, x, y)
@@ -196,7 +216,7 @@ class Renderer:
                 continue
             sheet = get_sprite_sheet(piece)
             start = airborne.landing_time - MOVE_DURATION
-            frame = sheet.get_frame("jump", state.current_time, start)
+            frame = sheet.get_frame("jump", state.current_time, start, layout.cell_size)
             x, y  = _pos_to_px(airborne.cell, layout)
             if piece.color == Color.BLACK:
                 frame.draw_on_with_outline(canvas, x, y)

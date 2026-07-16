@@ -26,7 +26,7 @@ def _load_state(piece_folder: pathlib.Path, state: str) -> tuple[list[Img], floa
         p = sprites_dir / f"{i}.png"
         if not p.exists():
             break
-        frames.append(Img().read(str(p), size=(100, 100), keep_aspect=True))
+        frames.append(Img().read(str(p), keep_aspect=True))
     return frames, fps, is_loop
 
 
@@ -39,7 +39,7 @@ class SpriteSheet:
         for state in ("idle", "move", "jump", "short_rest", "long_rest"):
             self._states[state] = _load_state(folder, state)
 
-    def get_frame(self, state: str, time_ms: int, state_start_ms: int = 0) -> Img:
+    def get_frame(self, state: str, time_ms: int, state_start_ms: int = 0, cell_size: int = 100) -> Img:
         frames, fps, is_loop = self._states[state]
         total = len(frames)
         elapsed = time_ms - state_start_ms
@@ -49,7 +49,11 @@ class SpriteSheet:
             index = index % total
         else:
             index = min(index, total - 1)
-        return frames[index]
+        frame = frames[index]
+        import cv2
+        result = Img()
+        result.img = cv2.resize(frame.img, (cell_size, cell_size), interpolation=cv2.INTER_AREA)
+        return result
 
 
 # Cache so we don't reload from disk every frame

@@ -72,8 +72,10 @@ def run():
         if key == ord('q') or key == 27:
             break
         elif key == ord('+') or key == ord('='):
-            cell_size = min(cell_size + ZOOM_STEP, MAX_CELL_SIZE)
+            new_cell = min(cell_size + ZOOM_STEP, MAX_CELL_SIZE)
+            cv2.resizeWindow(WINDOW, make_layout(new_cell).canvas_w, make_layout(new_cell).canvas_h)
         elif key == ord('-'):
-            cell_size = max(cell_size - ZOOM_STEP, MIN_CELL_SIZE)
+            new_cell = max(cell_size - ZOOM_STEP, MIN_CELL_SIZE)
+            cv2.resizeWindow(WINDOW, make_layout(new_cell).canvas_w, make_layout(new_cell).canvas_h)
 
     cv2.destroyAllWindows()
