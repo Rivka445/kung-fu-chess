@@ -2,8 +2,8 @@ from events.base import GameEventListener
 from model.position import Position
 from model.piece import Color
 from model.board import Board
+from constants import PIECE_POINTS
 
-PIECE_POINTS = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 COL_NAMES = "abcdefgh"
 
 

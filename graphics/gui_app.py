@@ -1,13 +1,12 @@
 import cv2
 import time
 from engine.game_builder import GameBuilder
-from graphics.renderer import Renderer, _make_layout, MIN_CELL_SIZE, MAX_CELL_SIZE
+from graphics.renderer import Renderer, make_layout
 from events.move_logger import MoveLogger
 from input.board_mapper import pixel_to_pos
-from constants import CELL_SIZE
+from constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP
 
-WINDOW       = "Kung-Fu Chess"
-ZOOM_STEP    = 5   # pixels per +/- keypress
+WINDOW = "Kung-Fu Chess"
 
 DEFAULT_BOARD = [
     "bR bN bB bQ bK bB bN bR",
@@ -43,13 +42,13 @@ def run():
     renderer   = Renderer(move_logger)
 
     cell_size  = CELL_SIZE
-    layout     = _make_layout(cell_size)
+    layout     = make_layout(cell_size)
 
     def on_mouse(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
             controller.click(x, y, layout.cell_size, layout.board_x, layout.board_y)
         elif event == cv2.EVENT_RBUTTONDOWN:
-            engine.request_jump(pixel_to_pos(x, y, layout.cell_size, layout.board_x, layout.board_y))
+            controller.jump(x, y, layout.cell_size, layout.board_x, layout.board_y)
 
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)
@@ -66,7 +65,6 @@ def run():
         # Recalculate cell_size from actual window size each frame
         cell_size = _cell_size_from_window(WINDOW, cell_size)
         canvas, layout = renderer.draw(engine.board, engine.state, controller._selected, cell_size)
-
         frame = cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR)
         cv2.imshow(WINDOW, frame)
 

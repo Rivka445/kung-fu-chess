@@ -67,6 +67,6 @@ class GameState:
 
         return IdleStatus()
 
-    def is_busy(self, pos: Position) -> bool:
-        """Return True if the piece at the given position cannot act right now."""
-        return not self.get_status(pos).can_act()
+    def cleanup_cooldowns(self):
+        """Remove expired cooldown entries to prevent unbounded memory growth."""
+        self.cooldowns = {pos: t for pos, t in self.cooldowns.items() if t > self.current_time}

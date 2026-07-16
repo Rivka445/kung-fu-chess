@@ -2,7 +2,7 @@ from model.piece import Piece, VALID_COLORS, VALID_PIECE_TYPES
 from exceptions import EmptyRowError, RowWidthMismatchError, UnknownTokenError
 
 
-def parse_row(line_str: str, expected_cols: int):
+def parse_row(line_str: str, expected_cols: int) -> list["Piece | None"]:
     tokens = line_str.split()
     if not tokens:
         raise EmptyRowError()

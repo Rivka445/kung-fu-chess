@@ -103,6 +103,7 @@ class RealTimeArbiter:
           5. Apply moves in chronological order, resolving simultaneous arrivals per group.
         """
         state.current_time += ms
+        state.cleanup_cooldowns()
         ready, landed = self._partition(state)
 
         # Assign cooldown to each piece that just finished landing

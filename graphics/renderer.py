@@ -8,9 +8,8 @@ from model.board import Board
 from model.game_state import GameState
 from model.position import Position
 from model.piece import Color
-from constants import MOVE_DURATION
+from constants import MOVE_DURATION, MIN_CELL_SIZE, MAX_CELL_SIZE, BOARD_IMAGE
 
-BOARD_IMG  = pathlib.Path(__file__).parent.parent / "assets" / "assets" / "images" / "board.png"
 SIDEBAR_W  = 260
 COORD_SIZE = 30
 
@@ -23,8 +22,6 @@ WHITE_TXT   = (230, 230, 230, 255)
 GRAY_TXT    = (160, 160, 160, 255)
 DIVIDER     = (70, 70, 90, 255)
 
-MIN_CELL_SIZE = 40
-MAX_CELL_SIZE = 150
 
 
 @dataclass(frozen=True)
@@ -38,7 +35,7 @@ class Layout:
     board_y:    int
 
 
-def _make_layout(cell_size: int) -> Layout:
+def make_layout(cell_size: int) -> Layout:
     cell_size  = max(MIN_CELL_SIZE, min(MAX_CELL_SIZE, cell_size))
     board_size = cell_size * 8
     board_x    = SIDEBAR_W + COORD_SIZE
@@ -93,14 +90,14 @@ class _NullMoveLogger:
 class Renderer:
     def __init__(self, move_logger=None):
         self._logger    = move_logger or _NullMoveLogger()
-        self._board_img = Img().read(str(BOARD_IMG))   # loaded once, resized per layout
+        self._board_img = Img().read(str(BOARD_IMAGE))   # loaded once, resized per layout
         self._last_cell_size = None
         self._board_bg  = None
 
     def _get_board_bg(self, layout: Layout) -> Img:
         """Return board background, resizing only when cell_size changes."""
         if layout.cell_size != self._last_cell_size:
-            self._board_bg       = Img().read(str(BOARD_IMG), size=(layout.board_size, layout.board_size))
+            self._board_bg       = Img().read(str(BOARD_IMAGE), size=(layout.board_size, layout.board_size))
             self._last_cell_size = layout.cell_size
         return self._board_bg
 
@@ -171,7 +168,10 @@ class Renderer:
         start = _state_start(pos, s, state)
         frame = sheet.get_frame(s, state.current_time, start)
         x, y  = _pos_to_px(pos, layout)
-        frame.draw_on(canvas, x, y)
+        if piece.color == Color.BLACK:
+            frame.draw_on_with_outline(canvas, x, y)
+        else:
+            frame.draw_on(canvas, x, y)
 
     def _draw_moving(self, canvas: Img, board: Board, state: GameState, layout: Layout):
         for move in state.pending_moves:
@@ -184,7 +184,10 @@ class Renderer:
             start    = move.arrival - MOVE_DURATION * distance
             frame    = sheet.get_frame("move", state.current_time, start)
             x, y     = _interpolated_px(move, state.current_time, layout)
-            frame.draw_on(canvas, x, y)
+            if piece.color == Color.BLACK:
+                frame.draw_on_with_outline(canvas, x, y)
+            else:
+                frame.draw_on(canvas, x, y)
 
     def _draw_airborne(self, canvas: Img, board: Board, state: GameState, layout: Layout):
         for airborne in state.airborne:
@@ -195,7 +198,10 @@ class Renderer:
             start = airborne.landing_time - MOVE_DURATION
             frame = sheet.get_frame("jump", state.current_time, start)
             x, y  = _pos_to_px(airborne.cell, layout)
-            frame.draw_on(canvas, x, y)
+            if piece.color == Color.BLACK:
+                frame.draw_on_with_outline(canvas, x, y)
+            else:
+                frame.draw_on(canvas, x, y)
 
     def _draw_selection(self, bg, selected: Position | None, layout: Layout):
         if selected is None:
@@ -217,7 +223,7 @@ class Renderer:
 
     def draw(self, board: Board, state: GameState,
              selected: Position | None, cell_size: int) -> Img:
-        layout     = _make_layout(cell_size)
+        layout     = make_layout(cell_size)
         canvas     = Img()
         canvas.img = np.full((layout.canvas_h, layout.canvas_w, 4), DARK_BG, dtype=np.uint8)
         bg         = canvas.img

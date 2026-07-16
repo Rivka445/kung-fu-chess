@@ -40,6 +40,20 @@ class Img:
         self.img = np.zeros((height, width, 4), dtype=np.uint8)
         return self
 
+    def draw_on_with_outline(self, other: "Img", x: int, y: int, color=(255, 255, 255), thickness=2):
+        """Draw with a colored outline around non-transparent pixels for visibility."""
+        src = _to_bgra(self.img)
+        alpha = src[..., 3]
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (thickness * 2 + 1, thickness * 2 + 1))
+        outline_mask = cv2.dilate(alpha, kernel)
+        outline_img = np.zeros_like(src)
+        outline_img[..., :3] = color
+        outline_img[..., 3] = outline_mask
+        outline = Img()
+        outline.img = outline_img
+        outline.draw_on(other, x, y)
+        self.draw_on(other, x, y)
+
     def draw_on(self, other: "Img", x: int, y: int):
         if self.img is None or other.img is None:
             raise ValueError("Both images must be loaded before drawing.")

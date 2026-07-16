@@ -51,9 +51,10 @@ class Controller:
             self._engine.request_move(self._selected, pos)
             self._selected = None
 
-    def jump(self, x: int, y: int, cell_size: int):
+    def jump(self, x: int, y: int, cell_size: int,
+             offset_x: int = 0, offset_y: int = 0):
         """Handle a jump at pixel coordinates — converts to Position and delegates."""
-        self._engine.request_jump(pixel_to_pos(x, y, cell_size))
+        self._engine.request_jump(pixel_to_pos(x, y, cell_size, offset_x, offset_y))
 
     def jump_pos(self, pos: Position):
         """Launch the piece at the given board position into the air."""

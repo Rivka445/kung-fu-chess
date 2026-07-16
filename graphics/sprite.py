@@ -1,8 +1,8 @@
 import json
 import pathlib
 from graphics.img import Img
+from constants import PIECES_DIR
 
-PIECES_DIR = pathlib.Path(__file__).parent.parent / "assets" / "assets" / "images" / "pieces"
 
 # Maps (piece_type_char, color_char) -> folder name  e.g. ('P','W') -> 'PW'
 # piece type chars match PieceType.value: K Q R B N P
@@ -22,10 +22,11 @@ def _load_state(piece_folder: pathlib.Path, state: str) -> tuple[list[Img], floa
 
     sprites_dir = state_dir / "sprites"
     frames = []
-    for i in range(1, 6):
+    for i in range(1, 100):
         p = sprites_dir / f"{i}.png"
-        if p.exists():
-            frames.append(Img().read(str(p), size=(100, 100), keep_aspect=True))
+        if not p.exists():
+            break
+        frames.append(Img().read(str(p), size=(100, 100), keep_aspect=True))
     return frames, fps, is_loop
 
 
