@@ -48,6 +48,7 @@ class RealTimeArbiter:
         """
         # Case 1: another piece arrived at the same target at the same time
         if move.target in simultaneous:
+            logger.info("collision (simultaneous) at %s", move.target)
             self._board.remove_piece(move.target)
             for l in self._listeners: l.on_collision(move.target)
             return
@@ -58,16 +59,19 @@ class RealTimeArbiter:
 
         # Case 2: enemy piece is landing on the target square — both pieces are removed
         if airborne_here and target_piece is not None and not source_piece.same_color(target_piece):
+            logger.info("collision (airborne) at %s", move.target)
             self._board.remove_piece(move.source)
             for l in self._listeners: l.on_collision(move.target)
             return
 
         # Case 3: friendly piece is at the target — move is blocked
         if target_piece is not None and source_piece.same_color(target_piece):
+            logger.debug("move blocked (friendly piece) at %s", move.target)
             return
 
         # Case 4: normal move — execute and check for special outcomes
         if target_piece is not None:
+            logger.info("capture: %s takes %s at %s", source_piece.to_str(), target_piece.to_str(), move.target)
             for l in self._listeners: l.on_capture(target_piece, source_piece.color)
         self._board.move_piece(move.source, move.target)
         state.cooldowns[move.target] = move.arrival + MOVE_DURATION
@@ -75,12 +79,14 @@ class RealTimeArbiter:
 
         # Check if the captured piece was a king
         if target_piece is not None and target_piece.is_king:
+            logger.info("king captured at %s — game over", move.target)
             for l in self._listeners: l.on_king_captured(move.target)
             state.game_over = True
 
         # Check if a pawn reached the last row and should be promoted
         piece = self._board.get_piece(move.target)
         if piece is not None and piece.is_pawn:
+            logger.info("pawn promoted at %s", move.target)
             self._board.promote_pawn(move.target)
             for l in self._listeners: l.on_pawn_promoted(move.target)
 

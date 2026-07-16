@@ -1,6 +1,7 @@
 from collections import defaultdict
 from model.game_state import PendingMove
 from model.position import Position
+from logger import logger
 
 
 # ---- Helpers ----
@@ -49,6 +50,8 @@ class CollisionResolver:
             if len(pair) == 2 and pair[0].source == pair[1].target:
                 loser = max(pair, key=lambda m: m.seq)  # Higher seq = submitted later = loses
                 cancelled.add(id(loser))
+                logger.info("collision (head-on): %s ↔ %s, cancelled %s → %s",
+                            pair[0].source, pair[0].target, loser.source, loser.target)
 
         return [m for m in ready if id(m) not in cancelled]
 
