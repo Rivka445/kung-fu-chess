@@ -138,6 +138,9 @@ python main.py
 | Left click a piece | Select it |
 | Left click a target square | Move the selected piece |
 | Right click a piece | Launch it into the air (jump) |
+| `+` / `=` | Zoom in |
+| `-` | Zoom out |
+| Resize window | Board scales automatically |
 | `Q` or `ESC` | Quit |
 
 ---
