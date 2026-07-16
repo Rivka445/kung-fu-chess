@@ -64,10 +64,18 @@ def _txt(bg, text, x, y, scale=0.5, color=WHITE_TXT, bold=False):
     cv2.putText(bg, text, (x, y), FONT, scale, color, 2 if bold else 1, cv2.LINE_AA)
 
 
+class _NullMoveLogger:
+    """Null Object — used when no logger is provided, returns safe defaults."""
+    def __init__(self):
+        self.player_names = {Color.WHITE: "White", Color.BLACK: "Black"}
+        self.moves        = {Color.WHITE: [],      Color.BLACK: []}
+        self.score        = {Color.WHITE: 0,        Color.BLACK: 0}
+
+
 class Renderer:
     def __init__(self, move_logger=None):
         self._board_bg = Img().read(str(BOARD_IMG), size=(BOARD_SIZE, BOARD_SIZE))
-        self._logger   = move_logger
+        self._logger   = move_logger or _NullMoveLogger()
 
     # ------------------------------------------------------------------ #
     #  Side panel                                                          #
@@ -101,9 +109,9 @@ class Renderer:
         """Draw one side panel (name, score, move table) at horizontal offset x0."""
         bg[:, x0:x0 + SIDEBAR_W] = PANEL_BG
 
-        name  = self._logger.player_names[color] if self._logger else color.name.capitalize()
-        moves = self._logger.moves[color]        if self._logger else []
-        score = self._logger.score[color]        if self._logger else 0
+        name  = self._logger.player_names[color]
+        moves = self._logger.moves[color]
+        score = self._logger.score[color]
 
         _txt(bg, name,           x0 + 10, 40, scale=0.7,  color=GOLD,              bold=True)
         _txt(bg, f"Score: {score}", x0 + 10, 68, scale=0.55, color=(0, 255, 100, 255), bold=True)

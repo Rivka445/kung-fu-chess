@@ -4,6 +4,12 @@ import cv2
 import numpy as np
 
 
+def _to_bgra(img):
+    if img.shape[2] == 3:
+        return cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+    return img
+
+
 class Img:
     def __init__(self):
         self.img = None
@@ -39,13 +45,8 @@ class Img:
             raise ValueError("Both images must be loaded before drawing.")
 
         # Ensure both are BGRA
-        def to_bgra(img):
-            if img.shape[2] == 3:
-                return cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
-            return img
-
-        src = to_bgra(self.img)
-        dst = to_bgra(other.img)
+        src = _to_bgra(self.img)
+        dst = _to_bgra(other.img)
 
         h, w = src.shape[:2]
         H, W = dst.shape[:2]

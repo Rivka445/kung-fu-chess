@@ -65,14 +65,4 @@ def get_sprite_sheet(piece) -> SpriteSheet:
 
 def piece_state(pos, game_state) -> str:
     """Map GameState status at pos to a sprite state name."""
-    from model.piece_status import IdleStatus, InFlightStatus, OnCooldownStatus
-    status = game_state.get_status(pos)
-    if isinstance(status, InFlightStatus):
-        # airborne = jump, pending move = move
-        if any(a.cell == pos for a in game_state.airborne):
-            return "jump"
-        return "move"
-    if isinstance(status, OnCooldownStatus):
-        cooldown_remaining = status._until - game_state.current_time
-        return "long_rest" if cooldown_remaining > MOVE_DURATION else "short_rest"
-    return "idle"
+    return game_state.get_status(pos).sprite_state(pos, game_state)

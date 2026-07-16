@@ -1,9 +1,5 @@
 import cv2
-import sys
-import os
 import time
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from engine.game_builder import GameBuilder
 from graphics.renderer import Renderer, BOARD_X, BOARD_Y
 from events.move_logger import MoveLogger
