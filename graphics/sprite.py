@@ -1,7 +1,6 @@
 import json
 import pathlib
 from graphics.img import Img
-from constants import MOVE_DURATION
 
 PIECES_DIR = pathlib.Path(__file__).parent.parent / "assets" / "assets" / "images" / "pieces"
 
