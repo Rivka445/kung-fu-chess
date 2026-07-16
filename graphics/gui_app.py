@@ -1,6 +1,7 @@
 import cv2
 import sys
 import os
+import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.game_builder import GameBuilder
@@ -9,7 +10,6 @@ from events.move_logger import MoveLogger
 from input.board_mapper import pixel_to_pos
 from constants import CELL_SIZE
 
-FRAME_MS = 16  # ~60fps
 WINDOW = "Kung-Fu Chess"
 
 DEFAULT_BOARD = [
@@ -44,15 +44,20 @@ def run():
     cv2.namedWindow(WINDOW)
     cv2.setMouseCallback(WINDOW, on_mouse)
 
+    last = time.perf_counter()
     while True:
-        engine.advance_time(FRAME_MS)
+        now = time.perf_counter()
+        elapsed_ms = int((now - last) * 1000)
+        last = now
+
+        engine.advance_time(elapsed_ms)
         move_logger.tick(engine.state.current_time)
         canvas = renderer.draw(engine.board, engine.state, controller._selected)
         frame = cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR)
         cv2.imshow(WINDOW, frame)
 
-        key = cv2.waitKey(FRAME_MS) & 0xFF
-        if key == ord('q') or key == 27:  # q or ESC
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q') or key == 27:
             break
 
     cv2.destroyAllWindows()
