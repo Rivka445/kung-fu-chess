@@ -1,7 +1,7 @@
 import sys
-from engine.game_builder import GameBuilder, GameApplication
+from core.engine.game_builder import GameBuilder, GameApplication
 from script_test.script_parser import execute
-from events.log_listener import LogListener
+from core.events.log_listener import LogListener
 from constants import CELL_SIZE
 from exceptions import BoardParseError
 from logger import logger

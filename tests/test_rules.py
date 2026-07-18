@@ -2,11 +2,11 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from model.piece import Piece, Color, PieceType
-from model.position import Position
-from model.board import Board
-from board_io.board_parser import parse_row
-from rules.rule_engine import RuleEngine
+from core.model.piece import Piece, Color, PieceType
+from core.model.position import Position
+from core.model.board import Board
+from core.board_io.board_parser import parse_row
+from core.rules.rule_engine import RuleEngine
 
 engine = RuleEngine()
 

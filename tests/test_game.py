@@ -1,10 +1,10 @@
-from model.position import Position
-from model.piece import Piece
-from model.board import Board
-from board_io.board_parser import parse_row
-from rules.rule_engine import RuleEngine
-from engine.game_engine import GameEngine
-from input.controller import Controller
+from core.model.position import Position
+from core.model.piece import Piece
+from core.model.board import Board
+from core.board_io.board_parser import parse_row
+from core.rules.rule_engine import RuleEngine
+from core.engine.game_engine import GameEngine
+from core.input.controller import Controller
 
 
 def make_game(rows):

@@ -1,5 +1,5 @@
 from ui.state.base import UIState
-from server_bridge.base import ServerBridge
+from ui.server_bridge.base import ServerBridge
 
 
 class GameUIState(UIState):

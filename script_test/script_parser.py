@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from model.position import from_chess_notation
-from board_io.board_printer import print_board
+from core.model.position import from_chess_notation
+from core.board_io.board_printer import print_board
 from constants import CELL_SIZE
 from logger import logger
 
