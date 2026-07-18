@@ -12,6 +12,6 @@ MOVE_DURATION = 1000
 # Point value of each piece type (used for score calculation)
 PIECE_POINTS = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 
-IMAGES_DIR  = pathlib.Path(__file__).parent / "assets" / "assets" / "images"
-PIECES_DIR  = pathlib.Path(__file__).parent / "pieces_classic" / "pieces_classic"
+IMAGES_DIR  = pathlib.Path(__file__).parent / "assets" / "images"
+PIECES_DIR  = pathlib.Path(__file__).parent / "assets" / "pieces_classic"
 BOARD_IMAGE = IMAGES_DIR / "board.png"
