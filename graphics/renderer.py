@@ -11,7 +11,7 @@ from model.position import Position
 from model.piece import Color
 from constants import MIN_CELL_SIZE, MAX_CELL_SIZE, BOARD_IMAGE
 
-COL_LETTERS = "abcdefgh"
+COL_LETTERS = "ABCDEFGH"
 
 
 @dataclass(frozen=True)
