@@ -1,10 +1,16 @@
 import cv2
 import time
+import numpy as np
 from engine.game_builder import GameBuilder
 from graphics.renderer import Renderer, make_layout
 from events.move_logger import MoveLogger
-from input.board_mapper import pixel_to_pos
+from server_bridge.local_bridge import LocalBridge
+from ui.state.state_manager import StateManager
+from ui.state.menu_state import MenuState
+from ui.state.game_ui_state import GameUIState
+from ui.state.game_over_state import GameOverState
 from constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP
+from graphics.theme import DARK_BG
 
 WINDOW = "Kung-Fu Chess"
 
@@ -21,34 +27,57 @@ DEFAULT_BOARD = [
 
 
 def _cell_size_from_window(window: str, fallback: int) -> int:
-    """Derive cell_size from the current window height, clamped to valid range."""
     rect = cv2.getWindowImageRect(window)
     if rect is None or rect[3] <= 0:
         return fallback
-    # canvas_h = COORD_SIZE + cell_size*8 + COORD_SIZE  =>  cell_size = (h - 60) // 8
     cell_size = (rect[3] - 60) // 8
     return max(MIN_CELL_SIZE, min(MAX_CELL_SIZE, cell_size))
 
 
-def run():
+def _build_bridge() -> tuple:
     builder = GameBuilder()
     for row in DEFAULT_BOARD:
         builder.with_row(row)
-    app        = builder.build()
-    engine     = app.engine
-    controller = app.controller
-    move_logger = MoveLogger(engine.board, white_name="White", black_name="Black")
-    engine.add_listener(move_logger)
-    renderer   = Renderer(move_logger)
+    app         = builder.build()
+    move_logger = MoveLogger(app.engine.board, white_name="White", black_name="Black")
+    app.engine.add_listener(move_logger)
+    bridge      = LocalBridge(app.engine)
+    return bridge, app.controller, move_logger
 
-    cell_size  = CELL_SIZE
-    layout     = make_layout(cell_size)
+
+def run():
+    cell_size = CELL_SIZE
+    layout    = make_layout(cell_size)
+
+    bridge, controller, move_logger = _build_bridge()
+    renderer = Renderer(move_logger)
+
+    def start_game():
+        nonlocal manager
+        manager.transition(GameUIState(bridge))
+
+    def restart():
+        nonlocal bridge, controller, move_logger, renderer, manager
+        bridge, controller, move_logger = _build_bridge()
+        renderer = Renderer(move_logger)
+        manager.transition(GameUIState(bridge))
+
+    def quit_game():
+        raise SystemExit
+
+    manager = StateManager(MenuState(start_game, quit_game,
+                                     layout.canvas_w, layout.canvas_h))
 
     def on_mouse(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            controller.click(x, y, layout.cell_size, layout.board_x, layout.board_y)
+            current = manager.current
+            if isinstance(current, GameUIState):
+                controller.click(x, y, layout.cell_size, layout.board_x, layout.board_y)
+            else:
+                manager.handle_input({"type": "click", "x": x, "y": y})
         elif event == cv2.EVENT_RBUTTONDOWN:
-            controller.jump(x, y, layout.cell_size, layout.board_x, layout.board_y)
+            if isinstance(manager.current, GameUIState):
+                controller.jump(x, y, layout.cell_size, layout.board_x, layout.board_y)
 
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)
@@ -59,13 +88,30 @@ def run():
         elapsed_ms = int((now - last) * 1000)
         last       = now
 
-        engine.advance_time(elapsed_ms)
-        move_logger.tick(engine.state.current_time)
+        try:
+            manager.update(elapsed_ms)
+        except SystemExit:
+            break
 
-        # Recalculate cell_size from actual window size each frame
         cell_size = _cell_size_from_window(WINDOW, cell_size)
-        canvas, layout = renderer.draw(engine.board, engine.state, controller._selected, cell_size)
-        frame = cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR)
+
+        # Check game over transition
+        if isinstance(manager.current, GameUIState) and bridge.get_state().game_over:
+            manager.transition(GameOverState(restart, quit_game,
+                                             layout.canvas_w, layout.canvas_h))
+
+        current = manager.current
+        if isinstance(current, GameUIState):
+            move_logger.tick(bridge.get_state().current_time)
+            canvas, layout = renderer.draw(bridge.get_board(), bridge.get_state(),
+                                           controller._selected, cell_size)
+            frame = cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR)
+        else:
+            layout    = make_layout(cell_size)
+            bg        = np.full((layout.canvas_h, layout.canvas_w, 3), DARK_BG[:3], dtype=np.uint8)
+            current.draw(bg)
+            frame = bg
+
         cv2.imshow(WINDOW, frame)
 
         key = cv2.waitKey(1) & 0xFF
