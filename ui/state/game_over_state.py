@@ -2,7 +2,7 @@ import numpy as np
 from ui.state.base import UIState
 from ui.components.button import Button
 from ui.components.label import Label
-from graphics.theme import GOLD
+from ui.graphics.theme import GOLD
 
 
 class GameOverState(UIState):

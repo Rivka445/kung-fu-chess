@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from graphics.theme import FONT, PANEL_BG, WHITE_TXT, GOLD
+from ui.graphics.theme import FONT, PANEL_BG, WHITE_TXT, GOLD
 
 
 class Button:

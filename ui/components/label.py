@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from graphics.theme import FONT, WHITE_TXT
+from ui.graphics.theme import FONT, WHITE_TXT
 
 
 class Label:
