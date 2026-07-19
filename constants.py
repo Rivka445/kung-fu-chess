@@ -15,3 +15,15 @@ PIECE_POINTS = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 IMAGES_DIR  = pathlib.Path(__file__).parent / "assets" / "images"
 PIECES_DIR  = pathlib.Path(__file__).parent / "assets" / "pieces_classic"
 BOARD_IMAGE = IMAGES_DIR / "board.png"
+
+# Standard chess starting position — token format: "<color><type>" (e.g. "bR" = black rook)
+DEFAULT_BOARD = [
+    "bR bN bB bQ bK bB bN bR",
+    "bP bP bP bP bP bP bP bP",
+    ". . . . . . . .",
+    ". . . . . . . .",
+    ". . . . . . . .",
+    ". . . . . . . .",
+    "wP wP wP wP wP wP wP wP",
+    "wR wN wB wQ wK wB wN wR",
+]
