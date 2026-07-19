@@ -83,6 +83,7 @@ chess-project/
 | **Builder** | `core/engine/game_builder.py` | Fluent API for constructing a game row by row |
 | **Bridge** | `ui/server_bridge/` | Decouples UI from the engine, allowing local or network play |
 | **State** | `ui/state/` | Manages UI screens (Menu, Game, GameOver) as separate state objects |
+| **Composite** | `ui/components/` | `UIContainer` acts as a composite component holding multiple `UIComponent` children |
 | **Command** | `script_test/script_parser.py` | Each script command is an encapsulated object registered by name |
 | **Cache** | `ui/graphics/sprite.py` | `SpriteSheet` instances are cached by piece type — no disk reads per frame |
 

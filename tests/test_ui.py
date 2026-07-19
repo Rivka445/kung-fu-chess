@@ -114,3 +114,18 @@ def test_game_over_state_clicks():
     # Button is at x=320, y=365, w=160, h=45
     state.handle_input({"type": "click", "x": 350, "y": 370})
     assert quitted
+
+
+def test_ui_container():
+    from ui.components.container import UIContainer
+    container = UIContainer()
+    btn = Button(10, 20, 100, 50, "Test")
+    lbl = Label(10, 20, "Hello")
+
+    container.add(btn)
+    container.add(lbl)
+    assert len(container._components) == 2
+
+    container.remove(btn)
+    assert len(container._components) == 1
+    assert container._components[0] == lbl

@@ -2,6 +2,7 @@ import numpy as np
 from ui.state.base import UIState
 from ui.components.button import Button
 from ui.components.label import Label
+from ui.components.container import UIContainer
 from ui.graphics.theme import GOLD
 
 
@@ -14,6 +15,12 @@ class MenuState(UIState):
         self._btn_quit  = Button(cx - 80, cy + 45, 160, 45, "Quit")
         self._on_start  = on_start
         self._on_quit   = on_quit
+
+        # Composite Pattern: Add components to a container
+        self._container = UIContainer()
+        self._container.add(self._title)
+        self._container.add(self._btn_start)
+        self._container.add(self._btn_quit)
 
     def on_enter(self) -> None: pass
     def on_exit(self) -> None: pass
@@ -30,6 +37,4 @@ class MenuState(UIState):
     def update(self, ms: int) -> None: pass
 
     def draw(self, canvas: np.ndarray) -> None:
-        self._title.draw(canvas)
-        self._btn_start.draw(canvas)
-        self._btn_quit.draw(canvas)
+        self._container.draw(canvas)

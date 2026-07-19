@@ -3,7 +3,10 @@ import numpy as np
 from ui.graphics.theme import FONT, PANEL_BG, WHITE_TXT, GOLD
 
 
-class Button:
+from ui.components.base import UIComponent
+
+
+class Button(UIComponent):
     def __init__(self, x: int, y: int, w: int, h: int, text: str):
         self.x, self.y, self.w, self.h = x, y, w, h
         self.text = text

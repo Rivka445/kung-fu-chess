@@ -3,7 +3,10 @@ import numpy as np
 from ui.graphics.theme import FONT, WHITE_TXT
 
 
-class Label:
+from ui.components.base import UIComponent
+
+
+class Label(UIComponent):
     def __init__(self, x: int, y: int, text: str,
                  scale: float = 0.5, color: tuple = WHITE_TXT):
         self.x, self.y = x, y
