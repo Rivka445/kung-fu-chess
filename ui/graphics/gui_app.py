@@ -32,23 +32,21 @@ def _cell_size_from_window(window: str, fallback: int) -> int:
     return max(MIN_CELL_SIZE, min(MAX_CELL_SIZE, cell_size))
 
 
-def _build_bridge(use_ws: bool = False) -> tuple:
-    """
-    Build a complete, fresh game session from DEFAULT_BOARD.
-    use_ws=True  → WebSocketBridge (talks to game_server.py)
-    use_ws=False → LocalBridge     (engine runs in-process)
-    """
+def _build_bridge(use_ws: bool = False, white_name: str = "White", black_name: str = "Black") -> tuple:
     builder = GameBuilder()
     for row in DEFAULT_BOARD:
         builder.with_row(row)
     app = builder.build()
-    move_logger = MoveLogger(app.engine.board, app.engine.bus, white_name="White", black_name="Black")
-    SoundManager(app.engine.bus)
     if use_ws:
-        bridge = WebSocketBridge(app.engine.bus)
+        bridge = WebSocketBridge(app.engine.bus, username=white_name)
         bridge.connect()
+        move_logger = MoveLogger(bridge.get_board(), app.engine.bus,
+                                 white_name=white_name, black_name=black_name)
     else:
         bridge = LocalBridge(app.engine)
+        move_logger = MoveLogger(app.engine.board, app.engine.bus,
+                                 white_name=white_name, black_name=black_name)
+    SoundManager(app.engine.bus)
     return bridge, app.controller, move_logger
 
 
@@ -66,6 +64,33 @@ def _render_frame(manager, bridge, controller, move_logger, renderer, cell_size)
     return bg, layout
 
 
+def _ws_click(x, y, bridge, controller, layout):
+    """Selection logic for WS mode — sends move via bridge instead of local engine."""
+    from core.input.board_mapper import pixel_to_pos
+    pos = pixel_to_pos(x, y, layout.cell_size, layout.board_x, layout.board_y)
+    board = bridge.get_board()
+    if not board.is_inside(pos):
+        return
+    piece = board.get_piece(pos)
+    if controller._selected is None:
+        if piece is not None:
+            controller._selected = pos
+        return
+    selected_piece = board.get_piece(controller._selected)
+    if piece is not None and selected_piece is not None and piece.color == selected_piece.color:
+        controller._selected = pos
+    else:
+        bridge.send_move(controller._selected, pos)
+        controller._selected = None
+
+
+def _ws_jump(x, y, bridge, controller, layout):
+    """Jump for WS mode — sends jump via bridge."""
+    from core.input.board_mapper import pixel_to_pos
+    pos = pixel_to_pos(x, y, layout.cell_size, layout.board_x, layout.board_y)
+    bridge.send_jump(pos)
+
+
 def _handle_zoom(key: int, cell_size: int) -> int:
     """Return updated cell_size after zoom key press (+/=/-)."""
     if key == ord('+') or key == ord('='):
@@ -78,7 +103,7 @@ def _handle_zoom(key: int, cell_size: int) -> int:
     return new_cell
 
 
-def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use_ws, restart, quit_game):
+def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, cell_size_ref, use_ws, restart, quit_game):
     """Run the ~60 fps game loop until the user quits."""
     last = time.perf_counter()
     while True:
@@ -92,6 +117,7 @@ def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use
             break
 
         cell_size = _cell_size_from_window(WINDOW, cell_size)
+        cell_size_ref[0] = cell_size
 
         if isinstance(manager.current, GameUIState) and bridge.get_state().game_over:
             layout = make_layout(cell_size)
@@ -109,12 +135,12 @@ def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use
     cv2.destroyAllWindows()
 
 
-def run(use_ws: bool = False):
+def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Black"):
     """Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop."""
     cell_size = CELL_SIZE
     layout = make_layout(cell_size)
 
-    bridge, controller, move_logger = _build_bridge(use_ws)
+    bridge, controller, move_logger = _build_bridge(use_ws, white_name, black_name)
     renderer = Renderer(move_logger)
 
     def start_game():
@@ -123,7 +149,7 @@ def run(use_ws: bool = False):
 
     def restart():
         nonlocal bridge, controller, move_logger, renderer, manager
-        bridge, controller, move_logger = _build_bridge(use_ws)
+        bridge, controller, move_logger = _build_bridge(use_ws, white_name, black_name)
         renderer = Renderer(move_logger)
         manager.transition(GameUIState(bridge))
 
@@ -132,18 +158,28 @@ def run(use_ws: bool = False):
 
     manager = StateManager(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h))
 
+    cell_size_ref = [cell_size]  # mutable container so on_mouse can read current value
+
     def on_mouse(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
             current = manager.current
             if isinstance(current, GameUIState):
-                controller.click(x, y, layout.cell_size, layout.board_x, layout.board_y)
+                cur_layout = make_layout(cell_size_ref[0])
+                if use_ws:
+                    _ws_click(x, y, bridge, controller, cur_layout)
+                else:
+                    controller.click(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
             else:
                 manager.handle_input({"type": "click", "x": x, "y": y})
         elif event == cv2.EVENT_RBUTTONDOWN:
             if isinstance(manager.current, GameUIState):
-                controller.jump(x, y, layout.cell_size, layout.board_x, layout.board_y)
+                cur_layout = make_layout(cell_size_ref[0])
+                if use_ws:
+                    _ws_jump(x, y, bridge, controller, cur_layout)
+                else:
+                    controller.jump(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
 
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)
 
-    _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use_ws, restart, quit_game)
+    _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, cell_size_ref, use_ws, restart, quit_game)

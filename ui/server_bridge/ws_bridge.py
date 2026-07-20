@@ -23,7 +23,6 @@ _PIECE_MAP = {
 
 
 def _parse_state(data: dict, board: Board, state: GameState):
-    """Update board and state in-place from server JSON."""
     rows = data["board"]
     for r, row in enumerate(rows):
         for c, cell in enumerate(row):
@@ -33,14 +32,10 @@ def _parse_state(data: dict, board: Board, state: GameState):
                 color, ptype = _PIECE_MAP[cell]
                 board.matrix[r][c] = Piece(color, ptype)
 
-    state.current_time = data["time"]
-    state.game_over    = data["game_over"]
+    state.current_time  = data["time"]
+    state.game_over     = data["game_over"]
     state.pending_moves = [
-        PendingMove(
-            Position(*m["source"]),
-            Position(*m["target"]),
-            m["arrival"]
-        )
+        PendingMove(Position(*m["source"]), Position(*m["target"]), m["arrival"])
         for m in data["pending_moves"]
     ]
     state.cooldowns = {
@@ -69,14 +64,16 @@ def _publish_events(data: dict, bus: EventBus):
 
 
 class WebSocketBridge(ServerBridge):
-    def __init__(self, bus: EventBus):
-        self._conn  = None
-        self._board = Board()
-        self._state = GameState()
-        self._lock  = threading.Lock()
-        self._bus   = bus
+    def __init__(self, bus: EventBus, username: str = "Player"):
+        self._conn     = None
+        self._board    = Board()
+        self._state    = GameState()
+        self._lock     = threading.Lock()
+        self._bus      = bus
+        self._username = username
 
     def _send(self, cmd: str):
+        """Send a command to the server and update local state from response."""
         if self._conn is None:
             return
         self._conn.send(cmd)
@@ -87,15 +84,22 @@ class WebSocketBridge(ServerBridge):
 
     def connect(self) -> None:
         self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
-        data = json.loads(self._conn.recv())
+        self._conn.send(f"LOGIN {self._username}")
+        raw = self._conn.recv()
+        if raw == "WAITING":
+            print(f"[{self._username}] Waiting for second player...")
+            raw = self._conn.recv()
+        data = json.loads(raw)
         with self._lock:
             _parse_state(data, self._board, self._state)
 
     def send_move(self, source: Position, target: Position) -> None:
-        self._send(f"M {to_chess_notation(source, ROWS)} {to_chess_notation(target, ROWS)}")
+        t = self._state.current_time
+        self._send(f"M {to_chess_notation(source, ROWS)} {to_chess_notation(target, ROWS)} {t}")
 
     def send_jump(self, pos: Position) -> None:
-        self._send(f"J {to_chess_notation(pos, ROWS)}")
+        t = self._state.current_time
+        self._send(f"J {to_chess_notation(pos, ROWS)} {t}")
 
     def get_board(self) -> Board:
         with self._lock:
@@ -106,4 +110,6 @@ class WebSocketBridge(ServerBridge):
             return self._state
 
     def advance_time(self, ms: int) -> None:
-        self._send(f"T {ms}")
+        """Advance time locally — no server round-trip every frame."""
+        with self._lock:
+            self._state.current_time += ms
