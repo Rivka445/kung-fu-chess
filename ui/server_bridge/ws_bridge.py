@@ -4,7 +4,7 @@ import threading
 import websockets.sync.client as ws_sync
 from core.model.position import Position, to_chess_notation, from_chess_notation
 from core.model.board import Board
-from core.model.game_state import GameState, PendingMove
+from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
 from ui.server_bridge.base import ServerBridge
 
@@ -47,6 +47,10 @@ def _parse_state(data: dict, board: Board, state: GameState):
         Position(int(k.split(",")[0]), int(k.split(",")[1])): v
         for k, v in data["cooldowns"].items()
     }
+    state.airborne = [
+        AirbornePiece(Position(*a["cell"]), a["landing_time"])
+        for a in data["airborne"]
+    ]
 
 
 class WebSocketBridge(ServerBridge):

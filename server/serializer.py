@@ -26,4 +26,8 @@ def serialize(board: Board, state: GameState) -> str:
         "cooldowns": {
             f"{pos.row},{pos.col}": t for pos, t in state.cooldowns.items()
         },
+        "airborne": [
+            {"cell": [a.cell.row, a.cell.col], "landing_time": a.landing_time}
+            for a in state.airborne
+        ],
     })
