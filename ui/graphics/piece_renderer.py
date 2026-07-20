@@ -5,7 +5,6 @@ from ui.graphics.theme import COORD_SIZE, SIDEBAR_W
 from core.model.board import Board
 from core.model.game_state import GameState
 from core.model.position import Position
-from core.model.piece import Color
 from constants import MOVE_DURATION
 
 
@@ -37,10 +36,7 @@ def _state_start(pos, state_name: str, game_state: GameState) -> int:
 
 
 def _draw_piece(canvas: Img, frame: Img, piece, x: int, y: int):
-    if piece.color == Color.BLACK:
-        frame.draw_on_with_outline(canvas, x, y)
-    else:
-        frame.draw_on(canvas, x, y)
+    frame.draw_on(canvas, x, y)
 
 
 class PieceRenderer:
