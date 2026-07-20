@@ -18,6 +18,7 @@ _engine  = None
 _events  = None
 _waiting = None   # (ws, username, asyncio.Event)
 _session = None   # (ws_white, ws_black)
+_names   = {}     # {Color.WHITE: name, Color.BLACK: name}
 
 
 def _build_engine():
@@ -28,11 +29,13 @@ def _build_engine():
 
 
 async def _send_state(ws):
-    await ws.send(serialize(_engine.board, _engine.state, _events))
+    await ws.send(serialize(_engine.board, _engine.state, _events,
+                            white_name=_names.get(Color.WHITE, "White"),
+                            black_name=_names.get(Color.BLACK, "Black")))
 
 
 async def handle(ws):
-    global _engine, _events, _waiting, _session
+    global _engine, _events, _waiting, _session, _names
 
     # ── LOGIN ──────────────────────────────────────────────────────────────
     first = (await ws.recv()).strip().split()
@@ -46,9 +49,11 @@ async def handle(ws):
         # First player — build engine, wait for second
         _engine  = _build_engine()
         _events  = make_event_collector(_engine.bus)
+        _names   = {}
         ready    = asyncio.Event()
         _waiting = (ws, username, ready)
         color    = Color.WHITE
+        _names[Color.WHITE] = username
         print(f"[lobby] {username} joined as White — waiting for Black...")
         await ws.send("WAITING")
         await ready.wait()
@@ -58,6 +63,7 @@ async def handle(ws):
         ws1, name1, ready = _waiting
         _waiting  = None
         color     = Color.BLACK
+        _names[Color.BLACK] = username
         ws_white, ws_black = ws1, ws
         _session  = (ws_white, ws_black)
         print(f"[lobby] {username} joined as Black — starting game!")

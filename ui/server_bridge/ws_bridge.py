@@ -46,6 +46,7 @@ def _parse_state(data: dict, board: Board, state: GameState):
         AirbornePiece(Position(*a["cell"]), a["landing_time"])
         for a in data["airborne"]
     ]
+    return data.get("white_name", "White"), data.get("black_name", "Black")
 
 
 def _publish_events(data: dict, bus: EventBus):
@@ -65,21 +66,23 @@ def _publish_events(data: dict, bus: EventBus):
 
 class WebSocketBridge(ServerBridge):
     def __init__(self, bus: EventBus, username: str = "Player"):
-        self._conn     = None
-        self._board    = Board()
-        self._state    = GameState()
-        self._lock     = threading.Lock()
-        self._bus      = bus
-        self._username = username
+        self._conn       = None
+        self._board      = Board()
+        self._state      = GameState()
+        self._lock       = threading.Lock()
+        self._bus        = bus
+        self._username   = username
+        self.player_names = {Color.WHITE: "White", Color.BLACK: "Black"}
 
     def _send(self, cmd: str):
-        """Send a command to the server and update local state from response."""
         if self._conn is None:
             return
         self._conn.send(cmd)
         data = json.loads(self._conn.recv())
         with self._lock:
-            _parse_state(data, self._board, self._state)
+            wn, bn = _parse_state(data, self._board, self._state)
+            self.player_names[Color.WHITE] = wn
+            self.player_names[Color.BLACK] = bn
         _publish_events(data, self._bus)
 
     def connect(self) -> None:
@@ -91,7 +94,9 @@ class WebSocketBridge(ServerBridge):
             raw = self._conn.recv()
         data = json.loads(raw)
         with self._lock:
-            _parse_state(data, self._board, self._state)
+            wn, bn = _parse_state(data, self._board, self._state)
+            self.player_names[Color.WHITE] = wn
+            self.player_names[Color.BLACK] = bn
 
     def send_move(self, source: Position, target: Position) -> None:
         t = self._state.current_time
