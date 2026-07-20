@@ -13,6 +13,7 @@ from ui.state.game_ui_state import GameUIState
 from ui.state.game_over_state import GameOverState
 from constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP, DEFAULT_BOARD
 from ui.graphics.theme import DARK_BG
+from core.model.piece import Color
 
 WINDOW = "Kung-Fu Chess"
 
@@ -38,10 +39,17 @@ def _build_bridge(use_ws: bool = False, white_name: str = "White", black_name: s
         builder.with_row(row)
     app = builder.build()
     if use_ws:
+        # In WS mode, main.py passes the local player's own username as both
+        # white_name and black_name — the server decides who is actually White
+        # or Black based on join order. Compare against the server's answer to
+        # mark which side is "you" in the sidebar.
         bridge = WebSocketBridge(app.engine.bus, username=white_name)
         bridge.connect()
+        my_name = white_name
+        server_white, server_black = bridge.player_names[Color.WHITE], bridge.player_names[Color.BLACK]
         move_logger = MoveLogger(bridge.get_board(), app.engine.bus,
-                                 white_name=white_name, black_name=black_name)
+                                 white_name=server_white + (" (You)" if server_white == my_name else ""),
+                                 black_name=server_black + (" (You)" if server_black == my_name else ""))
     else:
         bridge = LocalBridge(app.engine)
         move_logger = MoveLogger(app.engine.board, app.engine.bus,

@@ -11,11 +11,13 @@ Usage:
 import logging
 import sys
 
-logging.basicConfig(
-    stream=sys.stderr,
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+_handler = logging.StreamHandler(sys.stderr)
+_handler.setFormatter(logging.Formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
-)
+))
 
 logger = logging.getLogger("chess")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(_handler)
+logger.propagate = False  # don't leak to the root logger — avoids configuring third-party loggers (e.g. websockets)

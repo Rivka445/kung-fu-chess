@@ -7,10 +7,12 @@ from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
 from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured, Collision, PawnPromoted
 from ui.server_bridge.base import ServerBridge
+from logger import logger
 
 HOST = "localhost"
 PORT = 8765
 ROWS = 8
+TICK_MS = 50  # minimum real time between server sync ticks
 
 _PIECE_MAP = {
     "WP": (Color.WHITE, PieceType.PAWN),   "BP": (Color.BLACK, PieceType.PAWN),
@@ -24,13 +26,11 @@ _PIECE_MAP = {
 
 def _parse_state(data: dict, board: Board, state: GameState):
     rows = data["board"]
-    for r, row in enumerate(rows):
-        for c, cell in enumerate(row):
-            if cell is None:
-                board.matrix[r][c] = None
-            else:
-                color, ptype = _PIECE_MAP[cell]
-                board.matrix[r][c] = Piece(color, ptype)
+    board.matrix = [
+        [None if cell is None else Piece(*_PIECE_MAP[cell]) for cell in row]
+        for row in rows
+    ]
+    board.expected_cols = len(rows[0]) if rows else None
 
     state.current_time  = data["time"]
     state.game_over     = data["game_over"]
@@ -65,6 +65,17 @@ def _publish_events(data: dict, bus: EventBus):
 
 
 class WebSocketBridge(ServerBridge):
+    """
+    The server pushes a fresh state to BOTH players after any single player's
+    command (so opponent moves show up too) — it is not a strict 1-reply-per-
+    request protocol. A dedicated background thread drains every incoming
+    message as it arrives and applies it to local state; sending never blocks
+    waiting for "its own" reply. Pairing one send with one blocking recv() (the
+    earlier approach) caused clients to occasionally consume a message meant
+    for a different purpose, leaving a growing backlog that made the game
+    appear to freeze or apply moves after a long delay.
+    """
+
     def __init__(self, bus: EventBus, username: str = "Player"):
         self._conn       = None
         self._board      = Board()
@@ -73,17 +84,26 @@ class WebSocketBridge(ServerBridge):
         self._bus        = bus
         self._username   = username
         self.player_names = {Color.WHITE: "White", Color.BLACK: "Black"}
+        self._tick_accum = 0
 
-    def _send(self, cmd: str):
-        if self._conn is None:
-            return
-        self._conn.send(cmd)
-        data = json.loads(self._conn.recv())
+    def _apply(self, raw: str):
+        data = json.loads(raw)
         with self._lock:
             wn, bn = _parse_state(data, self._board, self._state)
             self.player_names[Color.WHITE] = wn
             self.player_names[Color.BLACK] = bn
         _publish_events(data, self._bus)
+
+    def _recv_loop(self):
+        while True:
+            try:
+                raw = self._conn.recv()
+            except Exception:
+                return
+            try:
+                self._apply(raw)
+            except Exception:
+                logger.exception("failed to apply server state — skipping this message")
 
     def connect(self) -> None:
         self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
@@ -92,19 +112,18 @@ class WebSocketBridge(ServerBridge):
         if raw == "WAITING":
             print(f"[{self._username}] Waiting for second player...")
             raw = self._conn.recv()
-        data = json.loads(raw)
-        with self._lock:
-            wn, bn = _parse_state(data, self._board, self._state)
-            self.player_names[Color.WHITE] = wn
-            self.player_names[Color.BLACK] = bn
+        self._apply(raw)
+        threading.Thread(target=self._recv_loop, daemon=True).start()
 
     def send_move(self, source: Position, target: Position) -> None:
-        t = self._state.current_time
-        self._send(f"M {to_chess_notation(source, ROWS)} {to_chess_notation(target, ROWS)} {t}")
+        with self._lock:
+            t = self._state.current_time
+        self._conn.send(f"M {to_chess_notation(source, ROWS)} {to_chess_notation(target, ROWS)} {t}")
 
     def send_jump(self, pos: Position) -> None:
-        t = self._state.current_time
-        self._send(f"J {to_chess_notation(pos, ROWS)} {t}")
+        with self._lock:
+            t = self._state.current_time
+        self._conn.send(f"J {to_chess_notation(pos, ROWS)} {t}")
 
     def get_board(self) -> Board:
         with self._lock:
@@ -115,6 +134,16 @@ class WebSocketBridge(ServerBridge):
             return self._state
 
     def advance_time(self, ms: int) -> None:
-        """Advance time locally — no server round-trip every frame."""
+        """
+        Advance time locally for smooth animation, and periodically ping the
+        server (every TICK_MS) so pending moves actually resolve server-side —
+        otherwise a move stays queued forever unless another command happens
+        to push the server's clock past its arrival time. The reply (like any
+        other incoming message) is picked up by the background reader thread.
+        """
         with self._lock:
             self._state.current_time += ms
+        self._tick_accum += ms
+        if self._tick_accum >= TICK_MS:
+            elapsed, self._tick_accum = self._tick_accum, 0
+            self._conn.send(f"T {elapsed}")
