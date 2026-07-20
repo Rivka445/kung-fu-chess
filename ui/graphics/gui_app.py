@@ -4,7 +4,7 @@ import numpy as np
 from core.engine.game_builder import GameBuilder
 from ui.graphics.renderer import Renderer, make_layout
 from core.events.move_logger import MoveLogger
-from ui.saund.sound_manager import SoundManager
+from ui.sound.sound_manager import SoundManager
 from ui.server_bridge.local_bridge import LocalBridge
 from ui.state.state_manager import StateManager
 from ui.state.menu_state import MenuState
