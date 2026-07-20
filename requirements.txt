@@ -3,3 +3,4 @@ opencv-python
 pytest
 pytest-cov
 playsound==1.2.2
+websockets
