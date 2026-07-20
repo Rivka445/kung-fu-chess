@@ -45,7 +45,7 @@ def _build_bridge(use_ws: bool = False) -> tuple:
     move_logger = MoveLogger(app.engine.board, app.engine.bus, white_name="White", black_name="Black")
     SoundManager(app.engine.bus)
     if use_ws:
-        bridge = WebSocketBridge()
+        bridge = WebSocketBridge(app.engine.bus)
         bridge.connect()
     else:
         bridge = LocalBridge(app.engine)

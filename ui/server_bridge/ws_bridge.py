@@ -6,6 +6,7 @@ from core.model.position import Position, to_chess_notation, from_chess_notation
 from core.model.board import Board
 from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
+from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured, Collision, PawnPromoted
 from ui.server_bridge.base import ServerBridge
 
 HOST = "localhost"
@@ -53,26 +54,43 @@ def _parse_state(data: dict, board: Board, state: GameState):
     ]
 
 
-class WebSocketBridge(ServerBridge):
-    def __init__(self):
-        self._conn   = None
-        self._board  = Board()
-        self._state  = GameState()
-        self._lock   = threading.Lock()
+def _publish_events(data: dict, bus: EventBus):
+    for e in data.get("events", []):
+        t = e["type"]
+        if t == "move_applied":
+            bus.publish(MoveApplied(Position(*e["source"]), Position(*e["target"])))
+        elif t == "capture":
+            bus.publish(Capture(None, Color(e["capturing_color"])))
+        elif t == "king_captured":
+            bus.publish(KingCaptured(Position(*e["pos"])))
+        elif t == "collision":
+            bus.publish(Collision(Position(*e["pos"])))
+        elif t == "pawn_promoted":
+            bus.publish(PawnPromoted(Position(*e["pos"])))
 
-    def connect(self) -> None:
-        self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
-        raw = self._conn.recv()
-        with self._lock:
-            _parse_state(json.loads(raw), self._board, self._state)
+
+class WebSocketBridge(ServerBridge):
+    def __init__(self, bus: EventBus):
+        self._conn  = None
+        self._board = Board()
+        self._state = GameState()
+        self._lock  = threading.Lock()
+        self._bus   = bus
 
     def _send(self, cmd: str):
         if self._conn is None:
             return
         self._conn.send(cmd)
-        raw = self._conn.recv()
+        data = json.loads(self._conn.recv())
         with self._lock:
-            _parse_state(json.loads(raw), self._board, self._state)
+            _parse_state(data, self._board, self._state)
+        _publish_events(data, self._bus)
+
+    def connect(self) -> None:
+        self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
+        data = json.loads(self._conn.recv())
+        with self._lock:
+            _parse_state(data, self._board, self._state)
 
     def send_move(self, source: Position, target: Position) -> None:
         self._send(f"M {to_chess_notation(source, ROWS)} {to_chess_notation(target, ROWS)}")

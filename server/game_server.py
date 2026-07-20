@@ -6,7 +6,7 @@ import asyncio
 import websockets
 from core.engine.game_builder import GameBuilder
 from core.model.position import from_chess_notation
-from server.serializer import serialize
+from server.serializer import serialize, make_event_collector
 from constants import DEFAULT_BOARD
 
 HOST = "localhost"
@@ -23,10 +23,12 @@ def _build_engine():
 
 async def handle(ws):
     engine = _build_engine()
+    events = make_event_collector(engine.bus)
     print(f"[server] client connected")
 
     async def send_state():
-        await ws.send(serialize(engine.board, engine.state))
+        await ws.send(serialize(engine.board, engine.state, events))
+        events.clear()
 
     await send_state()
 
