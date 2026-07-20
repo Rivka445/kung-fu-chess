@@ -1,5 +1,4 @@
 import json
-import asyncio
 import threading
 import websockets.sync.client as ws_sync
 from core.model.position import Position, to_chess_notation, from_chess_notation

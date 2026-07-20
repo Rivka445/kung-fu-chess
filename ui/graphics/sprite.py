@@ -15,7 +15,9 @@ def _folder(piece) -> str:
 
 def _load_state(piece_folder: pathlib.Path, state: str) -> tuple[list[Img], float, bool]:
     """Load sprites and config for a given state. Returns (frames, fps, is_loop)."""
-    state_dir = piece_folder / "states" / state
+    state_dir = (piece_folder / "states" / state).resolve()
+    if not str(state_dir).startswith(str(piece_folder.resolve())):
+        raise ValueError(f"Invalid state path: {state_dir}")
     config = json.loads((state_dir / "config.json").read_text())
     fps = config["graphics"]["frames_per_sec"]
     is_loop = config["graphics"]["is_loop"]

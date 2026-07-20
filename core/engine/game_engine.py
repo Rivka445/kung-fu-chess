@@ -23,12 +23,6 @@ class GameEngine:
         self._arbiter = RealTimeArbiter(board, self.bus)
         self.bus.publish(GameStarted())
 
-    def add_listener(self, listener):
-        """Register a listener to receive game events (moves, captures, promotions, collisions)."""
-        from core.events.base import GameEventListener
-        if isinstance(listener, GameEventListener):
-            self.bus.subscribe(type(listener), listener)
-
     def request_move(self, source: Position, target: Position):
         """
         Submit a move request from source to target.

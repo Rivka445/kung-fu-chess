@@ -11,7 +11,7 @@ def run(stream=None):
     if stream is None:
         stream = sys.stdin
 
-    builder = GameBuilder().with_listener(LogListener())
+    builder = GameBuilder()
     app: GameApplication | None = None
 
     in_board = False
@@ -27,6 +27,7 @@ def run(stream=None):
         if line_str == "Commands:":
             in_board, in_commands = False, True
             app = builder.build()
+            LogListener(app.engine.bus)
             continue
         if in_board:
             try:
