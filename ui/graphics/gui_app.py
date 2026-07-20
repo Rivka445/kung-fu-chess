@@ -6,6 +6,7 @@ from ui.graphics.renderer import Renderer, make_layout
 from core.events.move_logger import MoveLogger
 from ui.sound.sound_manager import SoundManager
 from ui.server_bridge.local_bridge import LocalBridge
+from ui.server_bridge.ws_bridge import WebSocketBridge
 from ui.state.state_manager import StateManager
 from ui.state.menu_state import MenuState
 from ui.state.game_ui_state import GameUIState
@@ -31,13 +32,11 @@ def _cell_size_from_window(window: str, fallback: int) -> int:
     return max(MIN_CELL_SIZE, min(MAX_CELL_SIZE, cell_size))
 
 
-def _build_bridge() -> tuple:
+def _build_bridge(use_ws: bool = False) -> tuple:
     """
     Build a complete, fresh game session from DEFAULT_BOARD.
-
-    Wires together: GameBuilder → GameApplication → MoveLogger → LocalBridge.
-    Returns (bridge, controller, move_logger) — everything the GUI needs to
-    drive and render a game. Called once on startup and again on every restart.
+    use_ws=True  → WebSocketBridge (talks to game_server.py)
+    use_ws=False → LocalBridge     (engine runs in-process)
     """
     builder = GameBuilder()
     for row in DEFAULT_BOARD:
@@ -45,11 +44,15 @@ def _build_bridge() -> tuple:
     app = builder.build()
     move_logger = MoveLogger(app.engine.board, app.engine.bus, white_name="White", black_name="Black")
     SoundManager(app.engine.bus)
-    bridge = LocalBridge(app.engine)
+    if use_ws:
+        bridge = WebSocketBridge()
+        bridge.connect()
+    else:
+        bridge = LocalBridge(app.engine)
     return bridge, app.controller, move_logger
 
 
-def run():
+def run(use_ws: bool = False):
     """
     Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop.
 
@@ -63,7 +66,7 @@ def run():
     cell_size = CELL_SIZE
     layout = make_layout(cell_size)
 
-    bridge, controller, move_logger = _build_bridge()
+    bridge, controller, move_logger = _build_bridge(use_ws)
     renderer = Renderer(move_logger)
 
     # ------------------------------------------------------------------ #
@@ -78,7 +81,7 @@ def run():
     def restart():
         """Tear down the current game and start a brand-new session."""
         nonlocal bridge, controller, move_logger, renderer, manager
-        bridge, controller, move_logger = _build_bridge()
+        bridge, controller, move_logger = _build_bridge(use_ws)
         renderer = Renderer(move_logger)
         manager.transition(GameUIState(bridge))
 
