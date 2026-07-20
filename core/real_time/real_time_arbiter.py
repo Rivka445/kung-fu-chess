@@ -2,6 +2,7 @@ from collections import defaultdict
 from core.model.game_state import GameState, AirbornePiece, PendingMove
 from core.model.position import Position
 from core.real_time.collision_resolver import CollisionResolver
+from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured, PawnPromoted, Collision
 from constants import MOVE_DURATION
 from logger import logger
 
@@ -16,9 +17,9 @@ class RealTimeArbiter:
       - Notifying listeners of game events (move, capture, promotion, collision)
     """
 
-    def __init__(self, board, listeners):
+    def __init__(self, board, bus: EventBus):
         self._board = board
-        self._listeners = listeners
+        self._bus = bus
         self._collision = CollisionResolver()
 
     # ---- Internal Helpers ----
@@ -50,7 +51,7 @@ class RealTimeArbiter:
         if move.target in simultaneous:
             logger.info("collision (simultaneous) at %s", move.target)
             self._board.remove_piece(move.target)
-            for l in self._listeners: l.on_collision(move.target)
+            self._bus.publish(Collision(move.target))
             return
 
         source_piece = self._board.get_piece(move.source)
@@ -61,7 +62,7 @@ class RealTimeArbiter:
         if airborne_here and target_piece is not None and not source_piece.same_color(target_piece):
             logger.info("collision (airborne) at %s", move.target)
             self._board.remove_piece(move.source)
-            for l in self._listeners: l.on_collision(move.target)
+            self._bus.publish(Collision(move.target))
             return
 
         # Case 3: friendly piece is at the target — move is blocked
@@ -72,15 +73,15 @@ class RealTimeArbiter:
         # Case 4: normal move — execute and check for special outcomes
         if target_piece is not None:
             logger.info("capture: %s takes %s at %s", source_piece.to_str(), target_piece.to_str(), move.target)
-            for l in self._listeners: l.on_capture(target_piece, source_piece.color)
+            self._bus.publish(Capture(target_piece, source_piece.color))
         self._board.move_piece(move.source, move.target)
         state.cooldowns[move.target] = move.arrival + MOVE_DURATION
-        for l in self._listeners: l.on_move_applied(move.source, move.target)
+        self._bus.publish(MoveApplied(move.source, move.target))
 
         # Check if the captured piece was a king
         if target_piece is not None and target_piece.is_king:
             logger.info("king captured at %s — game over", move.target)
-            for l in self._listeners: l.on_king_captured(move.target)
+            self._bus.publish(KingCaptured(move.target))
             state.game_over = True
 
         # Check if a pawn reached the last row and should be promoted
@@ -88,7 +89,7 @@ class RealTimeArbiter:
         if piece is not None and piece.is_pawn:
             logger.info("pawn promoted at %s", move.target)
             self._board.promote_pawn(move.target)
-            for l in self._listeners: l.on_pawn_promoted(move.target)
+            self._bus.publish(PawnPromoted(move.target))
 
     # ---- Public Interface ----
 

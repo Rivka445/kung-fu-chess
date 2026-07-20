@@ -1,4 +1,4 @@
-from core.events.base import GameEventListener
+from core.events.event_bus import EventBus, MoveApplied, Capture, Collision
 from core.model.position import Position
 from core.model.piece import Color
 from core.model.board import Board
@@ -20,7 +20,7 @@ def _fmt_time(ms: int) -> str:
     return f"{minutes:02d}:{seconds:02d}.{millis:03d}"
 
 
-class MoveLogger(GameEventListener):
+class MoveLogger:
     """
     Tracks moves and score per color.
     - moves: dict Color -> list of (time_str, move_str)
@@ -28,30 +28,30 @@ class MoveLogger(GameEventListener):
     - player_names: dict Color -> str
     """
 
-    def __init__(self, board: Board,
+    def __init__(self, board: Board, bus: EventBus,
                  white_name: str = "White", black_name: str = "Black"):
-        self._board = board                        # needed to know which color moved
+        self._board = board
         self.player_names = {Color.WHITE: white_name, Color.BLACK: black_name}
         self.moves: dict[Color, list[tuple[str, str]]] = {Color.WHITE: [], Color.BLACK: []}
-        self.score:  dict[Color, int]               = {Color.WHITE: 0,  Color.BLACK: 0}
-        self._current_time = 0                     # updated via on_time so we can timestamp
+        self.score:  dict[Color, int]                  = {Color.WHITE: 0,  Color.BLACK: 0}
+        self._current_time = 0
+        bus.subscribe(MoveApplied, self._on_move_applied)
+        bus.subscribe(Capture,     self._on_capture)
+        bus.subscribe(Collision,   self._on_collision)
 
     def tick(self, current_time: int):
-        """Called each frame with the current game clock (ms)."""
         self._current_time = current_time
 
-    def on_capture(self, captured_piece, capturing_color):
-        """Add captured piece's value to the capturing side's score."""
-        self.score[capturing_color] += PIECE_POINTS.get(captured_piece.type.value, 0)
+    def _on_capture(self, event: Capture):
+        self.score[event.capturing_color] += PIECE_POINTS.get(event.captured_piece.type.value, 0)
 
-    def on_move_applied(self, source: Position, target: Position):
-        """Record the move under the correct color with a timestamp."""
-        piece = self._board.get_piece(target)      # piece already moved to target
+    def _on_move_applied(self, event: MoveApplied):
+        piece = self._board.get_piece(event.target)
         if piece is None:
             return
         time_str = _fmt_time(self._current_time)
-        move_str = _sq(target)                     # destination square as move label
+        move_str = _sq(event.target)
         self.moves[piece.color].append((time_str, move_str))
 
-    def on_collision(self, pos: Position):
-        pass  # collisions don't count as moves
+    def _on_collision(self, event: Collision):
+        pass

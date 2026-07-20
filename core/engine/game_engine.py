@@ -3,7 +3,7 @@ from core.model.game_state import GameState, PendingMove
 from core.model.position import Position
 from core.rules.rule_engine import RuleEngine
 from core.real_time.real_time_arbiter import RealTimeArbiter
-from core.events.base import GameEventListener
+from core.events.event_bus import EventBus, GameStarted, GameOver
 from constants import MOVE_DURATION
 from logger import logger
 
@@ -19,12 +19,15 @@ class GameEngine:
         self.board = board
         self.rules = rules
         self.state = GameState()
-        self._listeners: list[GameEventListener] = []
-        self._arbiter = RealTimeArbiter(board, self._listeners)
+        self.bus = EventBus()
+        self._arbiter = RealTimeArbiter(board, self.bus)
+        self.bus.publish(GameStarted())
 
-    def add_listener(self, listener: GameEventListener):
+    def add_listener(self, listener):
         """Register a listener to receive game events (moves, captures, promotions, collisions)."""
-        self._listeners.append(listener)
+        from core.events.base import GameEventListener
+        if isinstance(listener, GameEventListener):
+            self.bus.subscribe(type(listener), listener)
 
     def request_move(self, source: Position, target: Position):
         """
@@ -84,3 +87,5 @@ class GameEngine:
         if self.state.game_over:
             return
         self._arbiter.advance(ms, self.state)
+        if self.state.game_over:
+            self.bus.publish(GameOver())

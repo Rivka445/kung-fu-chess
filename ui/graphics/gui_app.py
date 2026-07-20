@@ -43,9 +43,8 @@ def _build_bridge() -> tuple:
     for row in DEFAULT_BOARD:
         builder.with_row(row)
     app = builder.build()
-    move_logger = MoveLogger(app.engine.board, white_name="White", black_name="Black")
-    app.engine.add_listener(move_logger)
-    app.engine.add_listener(SoundManager())
+    move_logger = MoveLogger(app.engine.board, app.engine.bus, white_name="White", black_name="Black")
+    SoundManager(app.engine.bus)
     bridge = LocalBridge(app.engine)
     return bridge, app.controller, move_logger
 
