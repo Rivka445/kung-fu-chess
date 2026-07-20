@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import asyncio
 import websockets
 from core.engine.game_builder import GameBuilder
@@ -57,7 +61,7 @@ async def handle(ws):
 async def main():
     print(f"[server] listening on ws://{HOST}:{PORT}")
     async with websockets.serve(handle, HOST, PORT):
-        await asyncio.get_event_loop().run_until_complete(asyncio.Future())
+        await asyncio.Future()
 
 
 if __name__ == "__main__":
