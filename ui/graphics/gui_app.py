@@ -52,62 +52,87 @@ def _build_bridge(use_ws: bool = False) -> tuple:
     return bridge, app.controller, move_logger
 
 
-def run(use_ws: bool = False):
-    """
-    Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop.
+def _render_frame(manager, bridge, controller, move_logger, renderer, cell_size) -> tuple:
+    """Render one frame; returns (frame_bgr, layout)."""
+    current = manager.current
+    if isinstance(current, GameUIState):
+        move_logger.tick(bridge.get_state().current_time)
+        canvas, layout = renderer.draw(bridge.get_board(), bridge.get_state(),
+                                       controller._selected, cell_size)
+        return cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR), layout
+    layout = make_layout(cell_size)
+    bg = np.full((layout.canvas_h, layout.canvas_w, 3), DARK_BG[:3], dtype=np.uint8)
+    current.draw(bg)
+    return bg, layout
 
-    Responsibilities:
-      - Initialise the game session and renderer.
-      - Own the StateManager (Menu → Game → GameOver).
-      - Handle keyboard zoom (+/-) and window-resize events every frame.
-      - Route mouse input to the correct handler depending on the active state.
-      - Advance the game clock each frame and trigger rendering.
-    """
+
+def _handle_zoom(key: int, cell_size: int) -> int:
+    """Return updated cell_size after zoom key press (+/=/-)."""
+    if key == ord('+') or key == ord('='):
+        new_cell = min(cell_size + ZOOM_STEP, MAX_CELL_SIZE)
+    elif key == ord('-'):
+        new_cell = max(cell_size - ZOOM_STEP, MIN_CELL_SIZE)
+    else:
+        return cell_size
+    cv2.resizeWindow(WINDOW, make_layout(new_cell).canvas_w, make_layout(new_cell).canvas_h)
+    return new_cell
+
+
+def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use_ws, restart, quit_game):
+    """Run the ~60 fps game loop until the user quits."""
+    last = time.perf_counter()
+    while True:
+        now = time.perf_counter()
+        elapsed_ms = int((now - last) * 1000)
+        last = now
+
+        try:
+            manager.update(elapsed_ms)
+        except SystemExit:
+            break
+
+        cell_size = _cell_size_from_window(WINDOW, cell_size)
+
+        if isinstance(manager.current, GameUIState) and bridge.get_state().game_over:
+            layout = make_layout(cell_size)
+            manager.transition(GameOverState(restart, quit_game,
+                                             layout.canvas_w, layout.canvas_h))
+
+        frame, _ = _render_frame(manager, bridge, controller, move_logger, renderer, cell_size)
+        cv2.imshow(WINDOW, frame)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q') or key == 27:
+            break
+        cell_size = _handle_zoom(key, cell_size)
+
+    cv2.destroyAllWindows()
+
+
+def run(use_ws: bool = False):
+    """Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop."""
     cell_size = CELL_SIZE
     layout = make_layout(cell_size)
 
     bridge, controller, move_logger = _build_bridge(use_ws)
     renderer = Renderer(move_logger)
 
-    # ------------------------------------------------------------------ #
-    #  State-transition callbacks (passed into UI states as dependencies) #
-    # ------------------------------------------------------------------ #
-
     def start_game():
-        """Transition from the main menu into an active game session."""
         nonlocal manager
         manager.transition(GameUIState(bridge))
 
     def restart():
-        """Tear down the current game and start a brand-new session."""
         nonlocal bridge, controller, move_logger, renderer, manager
         bridge, controller, move_logger = _build_bridge(use_ws)
         renderer = Renderer(move_logger)
         manager.transition(GameUIState(bridge))
 
     def quit_game():
-        """Exit the main loop by raising SystemExit (caught in the loop below)."""
         raise SystemExit
 
-    # ------------------------------------------------------------------ #
-    #  State machine                                                       #
-    # ------------------------------------------------------------------ #
-
-    manager = StateManager(MenuState(start_game, quit_game,
-                                     layout.canvas_w, layout.canvas_h))
-
-    # ------------------------------------------------------------------ #
-    #  Mouse input                                                         #
-    # ------------------------------------------------------------------ #
+    manager = StateManager(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h))
 
     def on_mouse(event, x, y, flags, param):
-        """
-        OpenCV mouse callback — registered once and called on every mouse event.
-
-        Left-click during a game  → controller.click()  (select / move piece)
-        Left-click on menu/over   → state manager handles button hits
-        Right-click during a game → controller.jump()   (launch piece into air)
-        """
         if event == cv2.EVENT_LBUTTONDOWN:
             current = manager.current
             if isinstance(current, GameUIState):
@@ -118,64 +143,7 @@ def run(use_ws: bool = False):
             if isinstance(manager.current, GameUIState):
                 controller.jump(x, y, layout.cell_size, layout.board_x, layout.board_y)
 
-    # ------------------------------------------------------------------ #
-    #  Window setup                                                        #
-    # ------------------------------------------------------------------ #
-
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)
 
-    # ------------------------------------------------------------------ #
-    #  Main loop (~60 fps)                                                 #
-    # ------------------------------------------------------------------ #
-
-    last = time.perf_counter()
-    while True:
-        # --- Compute elapsed time since last frame ---
-        now        = time.perf_counter()
-        elapsed_ms = int((now - last) * 1000)
-        last       = now
-
-        # --- Advance the active state (moves game clock when in GameUIState) ---
-        try:
-            manager.update(elapsed_ms)
-        except SystemExit:
-            break
-
-        # --- Recalculate cell size in case the user resized the window ---
-        cell_size = _cell_size_from_window(WINDOW, cell_size)
-
-        # --- Detect game-over and switch to the GameOver screen ---
-        if isinstance(manager.current, GameUIState) and bridge.get_state().game_over:
-            manager.transition(GameOverState(restart, quit_game,
-                                             layout.canvas_w, layout.canvas_h))
-
-        # --- Render the current state ---
-        current = manager.current
-        if isinstance(current, GameUIState):
-            # Game is active: tick the move logger and render board + panels
-            move_logger.tick(bridge.get_state().current_time)
-            canvas, layout = renderer.draw(bridge.get_board(), bridge.get_state(),
-                                           controller._selected, cell_size)
-            frame = cv2.cvtColor(canvas.img, cv2.COLOR_BGRA2BGR)
-        else:
-            # Menu or GameOver: draw a plain dark background and let the state draw its UI
-            layout = make_layout(cell_size)
-            bg     = np.full((layout.canvas_h, layout.canvas_w, 3), DARK_BG[:3], dtype=np.uint8)
-            current.draw(bg)
-            frame = bg
-
-        cv2.imshow(WINDOW, frame)
-
-        # --- Keyboard input ---
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q') or key == 27:                  # Q / ESC → quit
-            break
-        elif key == ord('+') or key == ord('='):          # + → zoom in
-            new_cell = min(cell_size + ZOOM_STEP, MAX_CELL_SIZE)
-            cv2.resizeWindow(WINDOW, make_layout(new_cell).canvas_w, make_layout(new_cell).canvas_h)
-        elif key == ord('-'):                              # - → zoom out
-            new_cell = max(cell_size - ZOOM_STEP, MIN_CELL_SIZE)
-            cv2.resizeWindow(WINDOW, make_layout(new_cell).canvas_w, make_layout(new_cell).canvas_h)
-
-    cv2.destroyAllWindows()
+    _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, use_ws, restart, quit_game)
