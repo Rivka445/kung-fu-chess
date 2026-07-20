@@ -1,13 +1,33 @@
+import queue
 import threading
 from pathlib import Path
 from playsound import playsound
 from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured
+from logger import logger
 
 _DIR = Path(__file__).parent
 
+# Concurrent playsound() calls from separate threads race on Windows' MCI
+# backend (mciSendStringA) and one silently fails to open — e.g. a capture
+# fires "click" and "eat" at nearly the same instant and only one plays.
+# A single worker draining a queue keeps every playsound() call sequential.
+_queue: "queue.Queue[str]" = queue.Queue()
+
+
+def _worker():
+    while True:
+        file = _queue.get()
+        try:
+            playsound(str(_DIR / file))
+        except Exception:
+            logger.exception("failed to play sound %s", file)
+
+
+threading.Thread(target=_worker, daemon=True).start()
+
 
 def _play(file: str):
-    threading.Thread(target=playsound, args=(str(_DIR / file),), daemon=True).start()
+    _queue.put(file)
 
 
 class SoundManager:

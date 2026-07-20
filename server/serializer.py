@@ -19,7 +19,8 @@ def _serialize_events(events: list) -> list:
                            "target": [e.target.row, e.target.col]})
         elif isinstance(e, Capture):
             result.append({"type": "capture",
-                           "capturing_color": e.capturing_color.value})
+                           "capturing_color": e.capturing_color.value,
+                           "captured_piece": e.captured_piece.to_str()})
         elif isinstance(e, KingCaptured):
             result.append({"type": "king_captured",
                            "pos": [e.pos.row, e.pos.col]})

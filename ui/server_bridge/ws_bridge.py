@@ -55,7 +55,7 @@ def _publish_events(data: dict, bus: EventBus):
         if t == "move_applied":
             bus.publish(MoveApplied(Position(*e["source"]), Position(*e["target"])))
         elif t == "capture":
-            bus.publish(Capture(None, Color(e["capturing_color"])))
+            bus.publish(Capture(Piece.from_str(e["captured_piece"]), Color(e["capturing_color"])))
         elif t == "king_captured":
             bus.publish(KingCaptured(Position(*e["pos"])))
         elif t == "collision":
