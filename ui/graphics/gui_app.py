@@ -4,6 +4,7 @@ import numpy as np
 from core.engine.game_builder import GameBuilder
 from ui.graphics.renderer import Renderer, make_layout
 from core.events.move_logger import MoveLogger
+from ui.saund.sound_manager import SoundManager
 from ui.server_bridge.local_bridge import LocalBridge
 from ui.state.state_manager import StateManager
 from ui.state.menu_state import MenuState
@@ -44,6 +45,7 @@ def _build_bridge() -> tuple:
     app = builder.build()
     move_logger = MoveLogger(app.engine.board, white_name="White", black_name="Black")
     app.engine.add_listener(move_logger)
+    app.engine.add_listener(SoundManager())
     bridge = LocalBridge(app.engine)
     return bridge, app.controller, move_logger
 
@@ -60,7 +62,7 @@ def run():
       - Advance the game clock each frame and trigger rendering.
     """
     cell_size = CELL_SIZE
-    layout    = make_layout(cell_size)
+    layout = make_layout(cell_size)
 
     bridge, controller, move_logger = _build_bridge()
     renderer = Renderer(move_logger)
