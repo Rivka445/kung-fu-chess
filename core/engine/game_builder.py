@@ -13,12 +13,6 @@ class GameApplication:
     controller: Controller
 
 
-def build_game(board: Board) -> GameApplication:
-    """Build a complete GameApplication from a pre-constructed board."""
-    engine = GameEngine(board, RuleEngine())
-    return GameApplication(engine=engine, controller=Controller(engine))
-
-
 class GameBuilder:
     """
     Fluent builder for constructing a game row by row from a text script.
@@ -35,4 +29,5 @@ class GameBuilder:
 
     def build(self) -> GameApplication:
         """Finalize and return the assembled GameApplication."""
-        return build_game(self._board)
+        engine = GameEngine(self._board, RuleEngine())
+        return GameApplication(engine=engine, controller=Controller(engine))
