@@ -7,6 +7,7 @@ import websockets
 from core.model.piece import Color
 from server.game_session import dispatch
 from server.matchmaker import Matchmaker
+from server.db import authenticate_or_register, AuthError
 from logger import logger
 
 HOST = "localhost"
@@ -18,13 +19,23 @@ matchmaker = Matchmaker()
 async def handle(ws):
     # ── LOGIN ──────────────────────────────────────────────────────────────
     first = (await ws.recv()).strip().split()
-    if len(first) < 2 or first[0].upper() != "LOGIN":
+    if len(first) < 3 or first[0].upper() != "LOGIN":
         await ws.close()
         return
-    username = first[1]
+    username, password = first[1], first[2]
+
+    try:
+        rating = authenticate_or_register(username, password)
+    except AuthError as e:
+        logger.info("[server] login rejected for %s: %s", username, e)
+        await ws.send(f"ERR {e}")
+        await ws.close()
+        return
+
+    await ws.send(f"OK {rating}")
 
     # ── LOBBY ──────────────────────────────────────────────────────────────
-    color, session = await matchmaker.join(ws, username)
+    color, session = await matchmaker.join(ws, username, rating)
 
     logger.info("[server] %s (%s) ready", username, "White" if color == Color.WHITE else "Black")
 

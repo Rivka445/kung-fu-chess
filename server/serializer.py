@@ -37,7 +37,8 @@ def make_event_collector(bus: EventBus) -> list:
     return collected
 
 
-def serialize(board: Board, state: GameState, events: list = None, white_name: str = "White", black_name: str = "Black") -> str:
+def serialize(board: Board, state: GameState, events: list = None, white_name: str = "White", black_name: str = "Black",
+              white_rating: int = 1200, black_rating: int = 1200) -> str:
     return json.dumps({
         "board": [
             [_piece_str(board.matrix[r][c]) for c in range(len(board.matrix[r]))]
@@ -61,4 +62,6 @@ def serialize(board: Board, state: GameState, events: list = None, white_name: s
         "events": _serialize_events(events or []),
         "white_name": white_name,
         "black_name": black_name,
+        "white_rating": white_rating,
+        "black_rating": black_rating,
     })

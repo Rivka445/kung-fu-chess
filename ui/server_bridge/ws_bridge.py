@@ -1,3 +1,4 @@
+import getpass
 import json
 import threading
 import websockets.sync.client as ws_sync
@@ -47,7 +48,8 @@ def _parse_state(data: dict, board: Board, state: GameState):
         AirbornePiece(Position(*a["cell"]), a["landing_time"])
         for a in data["airborne"]
     ]
-    return data.get("white_name", "White"), data.get("black_name", "Black")
+    return (data.get("white_name", "White"), data.get("black_name", "Black"),
+            data.get("white_rating", 1200), data.get("black_rating", 1200))
 
 
 # wire type name -> event builder
@@ -89,15 +91,25 @@ class WebSocketBridge(ServerBridge):
         self._bus        = bus
         self._username   = username
         self.player_names = {Color.WHITE: "White", Color.BLACK: "Black"}
+        self.ratings      = {Color.WHITE: 1200, Color.BLACK: 1200}
         self._tick_accum = 0
+        self._bus.subscribe(GameOver, self._on_game_over)
 
     def _apply(self, raw: str):
         data = json.loads(raw)
         with self._lock:
-            wn, bn = _parse_state(data, self._board, self._state)
+            wn, bn, wr, br = _parse_state(data, self._board, self._state)
             self.player_names[Color.WHITE] = wn
             self.player_names[Color.BLACK] = bn
+            self.ratings[Color.WHITE] = wr
+            self.ratings[Color.BLACK] = br
         _publish_events(data, self._bus)
+
+    def _on_game_over(self, _event):
+        with self._lock:
+            my_color = Color.WHITE if self.player_names[Color.WHITE] == self._username else Color.BLACK
+            my_rating = self.ratings[my_color]
+        print(f"\nGame over — your new rating: {my_rating}")
 
     def _recv_loop(self):
         while True:
@@ -110,9 +122,27 @@ class WebSocketBridge(ServerBridge):
             except Exception:
                 logger.exception("failed to apply server state — skipping this message")
 
+    def _login(self) -> None:
+        """
+        Prompt for a password in the shell and log in. LOGIN <username> <password>
+        is verified server-side against SQLite (auto-registers unknown usernames).
+        The server closes the connection on rejection, so a retry opens a fresh one.
+        """
+        while True:
+            self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
+            password = getpass.getpass(f"Password for {self._username}: ")
+            self._conn.send(f"LOGIN {self._username} {password}")
+            reply = self._conn.recv()
+            if reply.startswith("ERR"):
+                print(f"Login failed: {reply[4:]}")
+                self._conn.close()
+                continue
+            rating = int(reply.split()[1])
+            print(f"Logged in as {self._username} (rating: {rating})")
+            return
+
     def connect(self) -> None:
-        self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
-        self._conn.send(f"LOGIN {self._username}")
+        self._login()
         raw = self._conn.recv()
         if raw == "WAITING":
             print(f"[{self._username}] Waiting for second player...")

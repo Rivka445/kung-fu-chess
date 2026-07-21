@@ -1,7 +1,9 @@
 from core.engine.game_builder import GameBuilder
 from core.model.position import from_chess_notation
 from core.model.piece import Color
+from core.events.event_bus import Capture
 from server.serializer import serialize, make_event_collector
+from server.db import update_ratings, STARTING_RATING
 from constants import DEFAULT_BOARD
 
 ROWS = 8
@@ -22,14 +24,39 @@ class GameSession:
         self.events  = make_event_collector(self.engine.bus)
         self.names   = {}   # {Color.WHITE: name, Color.BLACK: name}
         self.sockets = {}   # {Color.WHITE: ws, Color.BLACK: ws}
+        self.ratings = {}   # {Color.WHITE: rating, Color.BLACK: rating}
+        self._ratings_finalized = False
         self.engine.start()
+
+    def _winner_color(self):
+        """Color of the player whose move captured the enemy king, if any."""
+        for e in self.events:
+            if isinstance(e, Capture) and e.captured_piece.is_king:
+                return e.capturing_color
+        return None
+
+    def _finalize_ratings(self):
+        """Apply and persist the ELO update once, the moment the game ends."""
+        if self._ratings_finalized or not self.engine.state.game_over:
+            return
+        self._ratings_finalized = True
+        winner = self._winner_color()
+        if winner is None:
+            return
+        result = "white" if winner == Color.WHITE else "black"
+        new_white, new_black = update_ratings(self.names[Color.WHITE], self.names[Color.BLACK], result)
+        self.ratings[Color.WHITE] = new_white
+        self.ratings[Color.BLACK] = new_black
 
     async def send_state(self, ws):
         await ws.send(serialize(self.engine.board, self.engine.state, self.events,
                                 white_name=self.names.get(Color.WHITE, "White"),
-                                black_name=self.names.get(Color.BLACK, "Black")))
+                                black_name=self.names.get(Color.BLACK, "Black"),
+                                white_rating=self.ratings.get(Color.WHITE, STARTING_RATING),
+                                black_rating=self.ratings.get(Color.BLACK, STARTING_RATING)))
 
     async def broadcast(self):
+        self._finalize_ratings()
         await self.send_state(self.sockets[Color.WHITE])
         try:
             await self.send_state(self.sockets[Color.BLACK])

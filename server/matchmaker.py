@@ -10,11 +10,12 @@ class Matchmaker:
     def __init__(self):
         self._waiting = None  # (ws, username, session, asyncio.Event)
 
-    async def join(self, ws, username: str) -> tuple[Color, GameSession]:
+    async def join(self, ws, username: str, rating: int) -> tuple[Color, GameSession]:
         if self._waiting is None:
             session = GameSession()
             session.names[Color.WHITE] = username
             session.sockets[Color.WHITE] = ws
+            session.ratings[Color.WHITE] = rating
             ready = asyncio.Event()
             self._waiting = (ws, username, session, ready)
             logger.info("[lobby] %s joined as White — waiting for Black...", username)
@@ -26,6 +27,7 @@ class Matchmaker:
         self._waiting = None
         session.names[Color.BLACK] = username
         session.sockets[Color.BLACK] = ws
+        session.ratings[Color.BLACK] = rating
         logger.info("[lobby] %s joined as Black — starting game!", username)
         ready.set()
         return Color.BLACK, session
