@@ -1,6 +1,8 @@
 import cv2
 from core.model.piece import Color
-from ui.graphics.theme import SIDEBAR_W, FONT, GOLD, WHITE_TXT, GRAY_TXT, DIVIDER, PANEL_BG
+from ui.graphics.theme import (SIDEBAR_W, FONT, GOLD, WHITE_TXT, GRAY_TXT, DIVIDER, PANEL_BG,
+                               SWATCH_WHITE, SWATCH_BLACK)
+from ui.graphics.unicode_text import draw_unicode_text
 
 
 def _txt(bg, text, x, y, scale=0.5, color=WHITE_TXT, bold=False):
@@ -16,10 +18,24 @@ class PanelRenderer:
         name  = self._logger.player_names[color]
         moves = self._logger.moves[color]
         score = self._logger.score[color]
-        _txt(bg, name,              x0 + 10, 40, scale=0.7,  color=GOLD,            bold=True)
-        _txt(bg, f"Score: {score}", x0 + 10, 68, scale=0.55, color=(0, 255, 100, 255), bold=True)
-        self._draw_headers(bg, x0, header_y=100)
-        self._draw_rows(bg, x0, moves, header_y=100, layout=layout)
+        self._draw_player_header(bg, x0, color, name)
+        _txt(bg, f"Score: {score}", x0 + 10, 82, scale=0.55, color=(0, 255, 100, 255), bold=True)
+        self._draw_headers(bg, x0, header_y=112)
+        self._draw_rows(bg, x0, moves, header_y=112, layout=layout)
+
+    def _draw_player_header(self, bg, x0: int, color: Color, name: str):
+        """Filled circle (white/black) + 'WHITE'/'BLACK' label so the side is unambiguous
+        at a glance, in addition to the player's own name."""
+        swatch = SWATCH_WHITE if color == Color.WHITE else SWATCH_BLACK
+        cx, cy = x0 + 18, 34
+        cv2.circle(bg, (cx, cy), 9, swatch, -1)
+        cv2.circle(bg, (cx, cy), 9, DIVIDER, 1)
+        label = "WHITE" if color == Color.WHITE else "BLACK"
+        # Player names are user-supplied and may contain non-Latin scripts (e.g. Hebrew) —
+        # cv2.putText's Hershey fonts can't render those at all, so this goes through a
+        # PIL TrueType font instead. "WHITE"/"BLACK" are always ASCII, so plain cv2 is fine.
+        draw_unicode_text(bg, name, x0 + 36, 42, font_size_px=22, color=GOLD)
+        _txt(bg, label, x0 + 36, 58, scale=0.4, color=GRAY_TXT, bold=True)
 
     def _draw_headers(self, bg, x0: int, header_y: int):
         cv2.line(bg, (x0 + 5, header_y - 5), (x0 + SIDEBAR_W - 5, header_y - 5), DIVIDER, 1)
