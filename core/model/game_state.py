@@ -40,6 +40,7 @@ class GameState:
     airborne: list[AirbornePiece] = field(default_factory=list)       # Pieces currently landing
     cooldowns: dict[Position, int] = field(default_factory=dict)      # Maps position -> cooldown expiry time
     game_over: bool = False                                            # True once a king has been captured
+    disconnect_seconds_left: int | None = None                        # Seconds until opponent auto-resigns, or None
     _seq: int = field(default=0, compare=False, repr=False)           # Internal counter for move sequencing
 
     def next_seq(self) -> int:
