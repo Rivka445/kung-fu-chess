@@ -1,7 +1,8 @@
 import json
 from core.model.board import Board
 from core.model.game_state import GameState
-from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured, Collision, PawnPromoted
+from core.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
+                                    PawnPromoted, GameStarted, GameOver)
 
 
 def _piece_str(piece) -> str | None:
@@ -10,33 +11,28 @@ def _piece_str(piece) -> str | None:
     return piece.color.value[0].upper() + piece.type.value.upper()
 
 
+# event class -> full wire-dict builder (including "type")
+_EVENT_SERIALIZERS = {
+    MoveApplied:  lambda e: {"type": "move_applied", "source": [e.source.row, e.source.col],
+                             "target": [e.target.row, e.target.col]},
+    Capture:      lambda e: {"type": "capture", "capturing_color": e.capturing_color.value,
+                             "captured_piece": e.captured_piece.to_str()},
+    KingCaptured: lambda e: {"type": "king_captured", "pos": [e.pos.row, e.pos.col]},
+    Collision:    lambda e: {"type": "collision", "pos": [e.pos.row, e.pos.col]},
+    PawnPromoted: lambda e: {"type": "pawn_promoted", "pos": [e.pos.row, e.pos.col]},
+    GameStarted:  lambda e: {"type": "game_started"},
+    GameOver:     lambda e: {"type": "game_ended"},
+}
+
+
 def _serialize_events(events: list) -> list:
-    result = []
-    for e in events:
-        if isinstance(e, MoveApplied):
-            result.append({"type": "move_applied",
-                           "source": [e.source.row, e.source.col],
-                           "target": [e.target.row, e.target.col]})
-        elif isinstance(e, Capture):
-            result.append({"type": "capture",
-                           "capturing_color": e.capturing_color.value,
-                           "captured_piece": e.captured_piece.to_str()})
-        elif isinstance(e, KingCaptured):
-            result.append({"type": "king_captured",
-                           "pos": [e.pos.row, e.pos.col]})
-        elif isinstance(e, Collision):
-            result.append({"type": "collision",
-                           "pos": [e.pos.row, e.pos.col]})
-        elif isinstance(e, PawnPromoted):
-            result.append({"type": "pawn_promoted",
-                           "pos": [e.pos.row, e.pos.col]})
-    return result
+    return [_EVENT_SERIALIZERS[type(e)](e) for e in events if type(e) in _EVENT_SERIALIZERS]
 
 
 def make_event_collector(bus: EventBus) -> list:
     """Subscribe to all events and collect them into a list."""
     collected = []
-    for event_type in (MoveApplied, Capture, KingCaptured, Collision, PawnPromoted):
+    for event_type in (MoveApplied, Capture, KingCaptured, Collision, PawnPromoted, GameStarted, GameOver):
         bus.subscribe(event_type, collected.append)
     return collected
 

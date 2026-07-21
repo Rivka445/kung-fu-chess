@@ -5,7 +5,8 @@ from core.model.position import Position, to_chess_notation, from_chess_notation
 from core.model.board import Board
 from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
-from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured, Collision, PawnPromoted
+from core.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
+                                    PawnPromoted, GameStarted, GameOver)
 from ui.server_bridge.base import ServerBridge
 from logger import logger
 
@@ -49,19 +50,23 @@ def _parse_state(data: dict, board: Board, state: GameState):
     return data.get("white_name", "White"), data.get("black_name", "Black")
 
 
+# wire type name -> event builder
+_EVENT_BUILDERS = {
+    "move_applied":  lambda e: MoveApplied(Position(*e["source"]), Position(*e["target"])),
+    "capture":       lambda e: Capture(Piece.from_str(e["captured_piece"]), Color(e["capturing_color"])),
+    "king_captured": lambda e: KingCaptured(Position(*e["pos"])),
+    "collision":     lambda e: Collision(Position(*e["pos"])),
+    "pawn_promoted": lambda e: PawnPromoted(Position(*e["pos"])),
+    "game_started":  lambda e: GameStarted(),
+    "game_ended":    lambda e: GameOver(),
+}
+
+
 def _publish_events(data: dict, bus: EventBus):
     for e in data.get("events", []):
-        t = e["type"]
-        if t == "move_applied":
-            bus.publish(MoveApplied(Position(*e["source"]), Position(*e["target"])))
-        elif t == "capture":
-            bus.publish(Capture(Piece.from_str(e["captured_piece"]), Color(e["capturing_color"])))
-        elif t == "king_captured":
-            bus.publish(KingCaptured(Position(*e["pos"])))
-        elif t == "collision":
-            bus.publish(Collision(Position(*e["pos"])))
-        elif t == "pawn_promoted":
-            bus.publish(PawnPromoted(Position(*e["pos"])))
+        builder = _EVENT_BUILDERS.get(e["type"])
+        if builder:
+            bus.publish(builder(e))
 
 
 class WebSocketBridge(ServerBridge):
