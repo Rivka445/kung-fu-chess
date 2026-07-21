@@ -30,6 +30,13 @@ class GameEngine:
         """
         self.bus.publish(GameStarted())
 
+    def force_game_over(self):
+        """End the game immediately (e.g. resignation on disconnect), publishing GameOver."""
+        if self.state.game_over:
+            return
+        self.state.game_over = True
+        self.bus.publish(GameOver())
+
     def request_move(self, source: Position, target: Position):
         """
         Submit a move request from source to target.
