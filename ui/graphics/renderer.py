@@ -105,6 +105,12 @@ class Renderer:
                             layout.board_y + layout.board_size // 2,
                             layout.cell_size / 40, (0, 0, 255, 255), 4)
 
+    def _draw_disconnect_warning(self, canvas: Img, state: GameState, layout: Layout):
+        if state.disconnect_seconds_left is not None:
+            canvas.put_text(f"OPPONENT DISCONNECTED - auto-resign in {state.disconnect_seconds_left}s",
+                            layout.board_x + 8, layout.board_y + 22,
+                            0.5, (0, 0, 255, 255), 1)
+
     def draw(self, board: Board, state: GameState,
              selected: Position | None, cell_size: int) -> tuple:
         layout     = make_layout(cell_size)
@@ -124,4 +130,5 @@ class Renderer:
             self._draw_legal_moves(bg, board, selected, layout)
         self._pieces.draw_all(canvas, board, state, layout)
         self._draw_game_over(canvas, state, layout)
+        self._draw_disconnect_warning(canvas, state, layout)
         return canvas, layout
