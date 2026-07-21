@@ -2,7 +2,7 @@ import queue
 import threading
 from pathlib import Path
 from playsound import playsound
-from core.events.event_bus import EventBus, MoveApplied, Capture, KingCaptured
+from core.events.event_bus import EventBus, MoveApplied, Capture, GameOver
 from logger import logger
 
 _DIR = Path(__file__).parent
@@ -32,6 +32,6 @@ def _play(file: str):
 
 class SoundManager:
     def __init__(self, bus: EventBus):
-        bus.subscribe(MoveApplied,   lambda e: _play("click.mp3"))
-        bus.subscribe(Capture,       lambda e: _play("eat.mp3"))
-        bus.subscribe(KingCaptured,  lambda e: _play("game over.mp3"))
+        bus.subscribe(MoveApplied, lambda e: _play("click.mp3"))
+        bus.subscribe(Capture,     lambda e: _play("eat.mp3"))
+        bus.subscribe(GameOver,    lambda e: _play("game over.mp3"))
