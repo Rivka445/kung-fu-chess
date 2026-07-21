@@ -6,7 +6,7 @@ import asyncio
 import websockets
 from core.model.piece import Color
 from server.game_session import dispatch
-from server.matchmaker import Matchmaker
+from server.matchmaker import Matchmaker, SEARCH_TIMEOUT_S
 from server.db import authenticate_or_register, AuthError
 from logger import logger
 
@@ -35,7 +35,25 @@ async def handle(ws):
     await ws.send(f"OK {rating}")
 
     # ── LOBBY ──────────────────────────────────────────────────────────────
-    color, session = await matchmaker.join(ws, username, rating)
+    # Wait for the client to explicitly ask to search ("PLAY" = clicking the
+    # Play button). A search that times out sends NO_MATCH and lets the
+    # client retry with another PLAY on this same, already-authenticated
+    # connection instead of logging in again.
+    color = session = None
+    async for message in ws:
+        if message.strip().upper() != "PLAY":
+            continue
+        try:
+            color, session = await asyncio.wait_for(
+                matchmaker.join(ws, username, rating), timeout=SEARCH_TIMEOUT_S)
+        except asyncio.TimeoutError:
+            logger.info("[server] %s found no match within %ss", username, SEARCH_TIMEOUT_S)
+            await ws.send("NO_MATCH")
+            continue
+        break
+
+    if session is None:
+        return  # socket closed while still in the lobby
 
     logger.info("[server] %s (%s) ready", username, "White" if color == Color.WHITE else "Black")
 
@@ -44,21 +62,27 @@ async def handle(ws):
     session.events.clear()
 
     # ── GAME LOOP ──────────────────────────────────────────────────────────
-    async for message in ws:
-        parts = message.strip().split()
-        if not parts:
-            continue
+    try:
+        async for message in ws:
+            parts = message.strip().split()
+            if not parts:
+                continue
 
-        cmd = parts[0].upper()
+            cmd = parts[0].upper()
 
-        result = dispatch(session, cmd, parts, color)
-        if result is None:
-            logger.debug("[server] unknown command: %r", message)
-            continue
-        if not result:
-            continue
+            result = dispatch(session, cmd, parts, color)
+            if result is None:
+                logger.debug("[server] unknown command: %r", message)
+                continue
+            if not result:
+                continue
 
-        await session.broadcast()
+            await session.broadcast()
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        if not session.engine.state.game_over:
+            session.handle_disconnect(color)
 
 
 async def main():
