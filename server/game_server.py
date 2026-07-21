@@ -9,6 +9,7 @@ from core.model.position import from_chess_notation
 from core.model.piece import Color
 from server.serializer import serialize, make_event_collector
 from constants import DEFAULT_BOARD
+from logger import logger
 
 HOST = "localhost"
 PORT = 8765
@@ -92,7 +93,7 @@ async def handle(ws):
         _waiting = (ws, username, ready)
         color    = Color.WHITE
         _names[Color.WHITE] = username
-        print(f"[lobby] {username} joined as White — waiting for Black...")
+        logger.info("[lobby] %s joined as White — waiting for Black...", username)
         await ws.send("WAITING")
         await ready.wait()
         ws_white, ws_black = _session
@@ -104,10 +105,10 @@ async def handle(ws):
         _names[Color.BLACK] = username
         ws_white, ws_black = ws1, ws
         _session  = (ws_white, ws_black)
-        print(f"[lobby] {username} joined as Black — starting game!")
+        logger.info("[lobby] %s joined as Black — starting game!", username)
         ready.set()
 
-    print(f"[server] {username} ({'White' if color == Color.WHITE else 'Black'}) ready")
+    logger.info("[server] %s (%s) ready", username, "White" if color == Color.WHITE else "Black")
 
     # Send initial state
     await _send_state(ws)
@@ -126,7 +127,7 @@ async def handle(ws):
         handler = COMMANDS.get(cmd)
         result = handler(parts, color) if handler else None
         if result is None:
-            print(f"[server] unknown command: {message!r}")
+            logger.debug("[server] unknown command: %r", message)
             continue
         if not result:
             continue
@@ -140,7 +141,7 @@ async def handle(ws):
 
 
 async def main():
-    print(f"[server] listening on ws://{HOST}:{PORT}")
+    logger.info("[server] listening on ws://%s:%s", HOST, PORT)
     async with websockets.serve(handle, HOST, PORT):
         await asyncio.Future()
 
