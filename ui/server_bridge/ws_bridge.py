@@ -36,6 +36,7 @@ def _parse_state(data: dict, board: Board, state: GameState):
 
     state.current_time  = data["time"]
     state.game_over     = data["game_over"]
+    state.disconnect_seconds_left = data.get("disconnect_seconds_left")
     state.pending_moves = [
         PendingMove(Position(*m["source"]), Position(*m["target"]), m["arrival"])
         for m in data["pending_moves"]
@@ -93,6 +94,8 @@ class WebSocketBridge(ServerBridge):
         self.player_names = {Color.WHITE: "White", Color.BLACK: "Black"}
         self.ratings      = {Color.WHITE: 1200, Color.BLACK: 1200}
         self._tick_accum = 0
+        # None -> "searching" (Play clicked) -> "matched" or "timed_out" (NO_MATCH)
+        self.search_status = None
         self._bus.subscribe(GameOver, self._on_game_over)
 
     def _apply(self, raw: str):
@@ -117,16 +120,25 @@ class WebSocketBridge(ServerBridge):
                 raw = self._conn.recv()
             except Exception:
                 return
+            if raw == "WAITING":
+                continue
+            if raw == "NO_MATCH":
+                self.search_status = "timed_out"
+                continue
             try:
                 self._apply(raw)
+                self.search_status = "matched"
             except Exception:
                 logger.exception("failed to apply server state — skipping this message")
 
-    def _login(self) -> None:
+    def login(self) -> None:
         """
         Prompt for a password in the shell and log in. LOGIN <username> <password>
         is verified server-side against SQLite (auto-registers unknown usernames).
         The server closes the connection on rejection, so a retry opens a fresh one.
+        Starts the background receive thread right after login — matchmaking now
+        happens later (start_search), so WAITING/NO_MATCH/state messages can arrive
+        at any point after this and must already be handled.
         """
         while True:
             self._conn = ws_sync.connect(f"ws://{HOST}:{PORT}")
@@ -139,16 +151,13 @@ class WebSocketBridge(ServerBridge):
                 continue
             rating = int(reply.split()[1])
             print(f"Logged in as {self._username} (rating: {rating})")
-            return
-
-    def connect(self) -> None:
-        self._login()
-        raw = self._conn.recv()
-        if raw == "WAITING":
-            print(f"[{self._username}] Waiting for second player...")
-            raw = self._conn.recv()
-        self._apply(raw)
+            break
         threading.Thread(target=self._recv_loop, daemon=True).start()
+
+    def start_search(self) -> None:
+        """Ask the server to start matchmaking (Play button)."""
+        self.search_status = "searching"
+        self._conn.send("PLAY")
 
     def send_move(self, source: Position, target: Position) -> None:
         with self._lock:
