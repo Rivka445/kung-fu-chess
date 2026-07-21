@@ -11,7 +11,7 @@ class LocalBridge(ServerBridge):
     def __init__(self, engine: GameEngine):
         self._engine = engine
 
-    def connect(self) -> None:
+    def login(self) -> None:
         pass  # no-op for local
 
     def send_move(self, source: Position, target: Position) -> None:
