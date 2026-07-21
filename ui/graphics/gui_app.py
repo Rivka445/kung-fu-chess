@@ -2,7 +2,7 @@ import cv2
 import time
 import numpy as np
 from core.engine.game_builder import GameBuilder
-from core.events.event_bus import EventBus
+from core.events.event_bus import EventBus, GameOver
 from ui.graphics.renderer import Renderer, make_layout
 from core.events.move_logger import MoveLogger
 from ui.sound.sound_manager import SoundManager
@@ -18,6 +18,18 @@ from ui.graphics.theme import DARK_BG
 from core.model.piece import Color
 
 WINDOW = "Kung-Fu Chess"
+
+
+class _GameOverWatch:
+    """
+    Bus-driven game-over flag, replacing per-frame polling of bridge state.
+    In WS mode the GameOver event may arrive on the WebSocketBridge's
+    background recv thread, so this only ever sets a flag here — the actual
+    state-machine transition still happens on the main render loop thread.
+    """
+    def __init__(self, bus: EventBus):
+        self.game_over = False
+        bus.subscribe(GameOver, lambda e: setattr(self, "game_over", True))
 
 
 def _cell_size_from_window(window: str, fallback: int) -> int:
@@ -65,11 +77,12 @@ def _build_bridge(use_ws: bool = False, white_name: str = "White", black_name: s
         move_logger = MoveLogger(app.engine.board, bus,
                                  white_name=white_name, black_name=black_name)
     SoundManager(bus)
+    game_over_watch = _GameOverWatch(bus)
     controller = Controller(bridge)
     if not use_ws:
         # All local listeners are wired now — safe to announce game start.
         app.engine.start()
-    return bridge, controller, move_logger
+    return bridge, controller, move_logger, game_over_watch
 
 
 def _render_frame(manager, bridge, controller, move_logger, renderer, cell_size) -> tuple:
@@ -98,44 +111,12 @@ def _handle_zoom(key: int, cell_size: int) -> int:
     return new_cell
 
 
-def _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, cell_size_ref, use_ws, restart, quit_game):
-    """Run the ~60 fps game loop until the user quits."""
-    last = time.perf_counter()
-    while True:
-        now = time.perf_counter()
-        elapsed_ms = int((now - last) * 1000)
-        last = now
-
-        try:
-            manager.update(elapsed_ms)
-        except SystemExit:
-            break
-
-        cell_size = _cell_size_from_window(WINDOW, cell_size)
-        cell_size_ref[0] = cell_size
-
-        if isinstance(manager.current, GameUIState) and bridge.get_state().game_over:
-            layout = make_layout(cell_size)
-            manager.transition(GameOverState(restart, quit_game,
-                                             layout.canvas_w, layout.canvas_h))
-
-        frame, _ = _render_frame(manager, bridge, controller, move_logger, renderer, cell_size)
-        cv2.imshow(WINDOW, frame)
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q') or key == 27:
-            break
-        cell_size = _handle_zoom(key, cell_size)
-
-    cv2.destroyAllWindows()
-
-
 def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Black"):
     """Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop."""
     cell_size = CELL_SIZE
     layout = make_layout(cell_size)
 
-    bridge, controller, move_logger = _build_bridge(use_ws, white_name, black_name)
+    bridge, controller, move_logger, game_over_watch = _build_bridge(use_ws, white_name, black_name)
     renderer = Renderer(move_logger)
 
     def start_game():
@@ -143,8 +124,8 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
         manager.transition(GameUIState(bridge))
 
     def restart():
-        nonlocal bridge, controller, move_logger, renderer, manager
-        bridge, controller, move_logger = _build_bridge(use_ws, white_name, black_name)
+        nonlocal bridge, controller, move_logger, renderer, manager, game_over_watch
+        bridge, controller, move_logger, game_over_watch = _build_bridge(use_ws, white_name, black_name)
         renderer = Renderer(move_logger)
         manager.transition(GameUIState(bridge))
 
@@ -171,4 +152,41 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)
 
-    _run_loop(manager, bridge, controller, move_logger, renderer, cell_size, cell_size_ref, use_ws, restart, quit_game)
+    def _run_loop():
+        """
+        Run the ~60 fps game loop until the user quits.
+        Nested so it always sees the latest bridge/controller/renderer/game_over_watch —
+        restart() rebinds those via nonlocal, and a plain (non-nested) function taking
+        them as parameters would keep rendering the stale, already-finished game.
+        """
+        nonlocal cell_size
+        last = time.perf_counter()
+        while True:
+            now = time.perf_counter()
+            elapsed_ms = int((now - last) * 1000)
+            last = now
+
+            try:
+                manager.update(elapsed_ms)
+            except SystemExit:
+                break
+
+            cell_size = _cell_size_from_window(WINDOW, cell_size)
+            cell_size_ref[0] = cell_size
+
+            if isinstance(manager.current, GameUIState) and game_over_watch.game_over:
+                layout = make_layout(cell_size)
+                manager.transition(GameOverState(restart, quit_game,
+                                                 layout.canvas_w, layout.canvas_h))
+
+            frame, _ = _render_frame(manager, bridge, controller, move_logger, renderer, cell_size)
+            cv2.imshow(WINDOW, frame)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q') or key == 27:
+                break
+            cell_size = _handle_zoom(key, cell_size)
+
+        cv2.destroyAllWindows()
+
+    _run_loop()
