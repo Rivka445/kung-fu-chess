@@ -34,6 +34,44 @@ async def _send_state(ws):
                             black_name=_names.get(Color.BLACK, "Black")))
 
 
+def _cmd_move(parts, color):
+    if len(parts) < 3:
+        return None
+    src = from_chess_notation(parts[1], ROWS)
+    tgt = from_chess_notation(parts[2], ROWS)
+    if len(parts) >= 4:
+        _engine.advance_time(int(parts[3]) - _engine.state.current_time)
+    piece = _engine.board.get_piece(src)
+    if piece is None or piece.color != color:
+        return False
+    _engine.request_move(src, tgt)
+    return True
+
+
+def _cmd_jump(parts, color):
+    if len(parts) < 2:
+        return None
+    pos = from_chess_notation(parts[1], ROWS)
+    if len(parts) >= 3:
+        _engine.advance_time(int(parts[2]) - _engine.state.current_time)
+    piece = _engine.board.get_piece(pos)
+    if piece is None or piece.color != color:
+        return False
+    _engine.request_jump(pos)
+    return True
+
+
+def _cmd_time(parts, color):
+    if len(parts) != 2:
+        return None
+    _engine.advance_time(int(parts[1]))
+    return True
+
+
+# cmd -> handler(parts, color) -> True (broadcast) / False (silent skip) / None (unknown/malformed)
+COMMANDS = {"M": _cmd_move, "J": _cmd_jump, "T": _cmd_time}
+
+
 async def handle(ws):
     global _engine, _events, _waiting, _session, _names
 
@@ -85,30 +123,12 @@ async def handle(ws):
 
         cmd = parts[0].upper()
 
-        if cmd == "M" and len(parts) >= 3:
-            src   = from_chess_notation(parts[1], ROWS)
-            tgt   = from_chess_notation(parts[2], ROWS)
-            if len(parts) >= 4:
-                _engine.advance_time(int(parts[3]) - _engine.state.current_time)
-            piece = _engine.board.get_piece(src)
-            if piece is None or piece.color != color:
-                continue
-            _engine.request_move(src, tgt)
-
-        elif cmd == "J" and len(parts) >= 2:
-            pos   = from_chess_notation(parts[1], ROWS)
-            if len(parts) >= 3:
-                _engine.advance_time(int(parts[2]) - _engine.state.current_time)
-            piece = _engine.board.get_piece(pos)
-            if piece is None or piece.color != color:
-                continue
-            _engine.request_jump(pos)
-
-        elif cmd == "T" and len(parts) == 2:
-            _engine.advance_time(int(parts[1]))
-
-        else:
+        handler = COMMANDS.get(cmd)
+        result = handler(parts, color) if handler else None
+        if result is None:
             print(f"[server] unknown command: {message!r}")
+            continue
+        if not result:
             continue
 
         await _send_state(ws)
