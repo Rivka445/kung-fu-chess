@@ -1,16 +1,18 @@
-from core.engine.game_engine import GameEngine
+from ui.server_bridge.base import ServerBridge
 from core.input.board_mapper import pixel_to_pos
 from core.model.position import Position
 
 
 class Controller:
     """
-    Handles player input and translates it into game engine actions.
+    Handles player input and translates it into calls on a ServerBridge.
     Manages click-based piece selection and move submission.
+    Works the same way for local and networked play — the bridge decides
+    where the move actually goes.
     """
 
-    def __init__(self, engine: GameEngine):
-        self._engine = engine
+    def __init__(self, bridge: ServerBridge):
+        self._bridge = bridge
         self._selected: Position | None = None  # Currently selected square (first click)
 
     def click(self, x: int, y: int, cell_size: int,
@@ -25,8 +27,8 @@ class Controller:
         Second click: submits a move from the selected square to the clicked square.
         If the second click lands on a friendly piece, it re-selects instead.
         """
-        state = self._engine.state
-        board = self._engine.board
+        state = self._bridge.get_state()
+        board = self._bridge.get_board()
 
         if state.game_over:
             return
@@ -48,14 +50,14 @@ class Controller:
             self._selected = pos
         else:
             # Second click on an empty square or enemy — submit the move
-            self._engine.request_move(self._selected, pos)
+            self._bridge.send_move(self._selected, pos)
             self._selected = None
 
     def jump(self, x: int, y: int, cell_size: int,
              offset_x: int = 0, offset_y: int = 0):
         """Handle a jump at pixel coordinates — converts to Position and delegates."""
-        self._engine.request_jump(pixel_to_pos(x, y, cell_size, offset_x, offset_y))
+        self.jump_pos(pixel_to_pos(x, y, cell_size, offset_x, offset_y))
 
     def jump_pos(self, pos: Position):
         """Launch the piece at the given board position into the air."""
-        self._engine.request_jump(pos)
+        self._bridge.send_jump(pos)

@@ -2,11 +2,13 @@ import cv2
 import time
 import numpy as np
 from core.engine.game_builder import GameBuilder
+from core.events.event_bus import EventBus
 from ui.graphics.renderer import Renderer, make_layout
 from core.events.move_logger import MoveLogger
 from ui.sound.sound_manager import SoundManager
 from ui.server_bridge.local_bridge import LocalBridge
 from ui.server_bridge.ws_bridge import WebSocketBridge
+from ui.input.controller import Controller
 from ui.state.state_manager import StateManager
 from ui.state.menu_state import MenuState
 from ui.state.game_ui_state import GameUIState
@@ -34,28 +36,37 @@ def _cell_size_from_window(window: str, fallback: int) -> int:
 
 
 def _build_bridge(use_ws: bool = False, white_name: str = "White", black_name: str = "Black") -> tuple:
-    builder = GameBuilder()
-    for row in DEFAULT_BOARD:
-        builder.with_row(row)
-    app = builder.build()
     if use_ws:
-        # In WS mode, main.py passes the local player's own username as both
-        # white_name and black_name — the server decides who is actually White
-        # or Black based on join order. Compare against the server's answer to
-        # mark which side is "you" in the sidebar.
-        bridge = WebSocketBridge(app.engine.bus, username=white_name)
+        # WS mode: the server owns the real GameEngine/RuleEngine — this process
+        # never builds one. It only mirrors the state the server sends and renders it,
+        # via a plain EventBus for local listeners (sound, move log) to subscribe to.
+        #
+        # main.py passes the local player's own username as both white_name and
+        # black_name — the server decides who is actually White or Black based on
+        # join order. Compare against the server's answer to mark which side is "you"
+        # in the sidebar.
+        bus = EventBus()
+        bridge = WebSocketBridge(bus, username=white_name)
         bridge.connect()
         my_name = white_name
         server_white, server_black = bridge.player_names[Color.WHITE], bridge.player_names[Color.BLACK]
-        move_logger = MoveLogger(bridge.get_board(), app.engine.bus,
+        move_logger = MoveLogger(bridge.get_board(), bus,
                                  white_name=server_white + (" (You)" if server_white == my_name else ""),
                                  black_name=server_black + (" (You)" if server_black == my_name else ""))
     else:
+        # Local (hot-seat) mode: no server exists, so this process runs the real
+        # GameEngine itself.
+        builder = GameBuilder()
+        for row in DEFAULT_BOARD:
+            builder.with_row(row)
+        app = builder.build()
+        bus = app.engine.bus
         bridge = LocalBridge(app.engine)
-        move_logger = MoveLogger(app.engine.board, app.engine.bus,
+        move_logger = MoveLogger(app.engine.board, bus,
                                  white_name=white_name, black_name=black_name)
-    SoundManager(app.engine.bus)
-    return bridge, app.controller, move_logger
+    SoundManager(bus)
+    controller = Controller(bridge)
+    return bridge, controller, move_logger
 
 
 def _render_frame(manager, bridge, controller, move_logger, renderer, cell_size) -> tuple:
@@ -70,33 +81,6 @@ def _render_frame(manager, bridge, controller, move_logger, renderer, cell_size)
     bg = np.full((layout.canvas_h, layout.canvas_w, 3), DARK_BG[:3], dtype=np.uint8)
     current.draw(bg)
     return bg, layout
-
-
-def _ws_click(x, y, bridge, controller, layout):
-    """Selection logic for WS mode — sends move via bridge instead of local engine."""
-    from core.input.board_mapper import pixel_to_pos
-    pos = pixel_to_pos(x, y, layout.cell_size, layout.board_x, layout.board_y)
-    board = bridge.get_board()
-    if not board.is_inside(pos):
-        return
-    piece = board.get_piece(pos)
-    if controller._selected is None:
-        if piece is not None:
-            controller._selected = pos
-        return
-    selected_piece = board.get_piece(controller._selected)
-    if piece is not None and selected_piece is not None and piece.color == selected_piece.color:
-        controller._selected = pos
-    else:
-        bridge.send_move(controller._selected, pos)
-        controller._selected = None
-
-
-def _ws_jump(x, y, bridge, controller, layout):
-    """Jump for WS mode — sends jump via bridge."""
-    from core.input.board_mapper import pixel_to_pos
-    pos = pixel_to_pos(x, y, layout.cell_size, layout.board_x, layout.board_y)
-    bridge.send_jump(pos)
 
 
 def _handle_zoom(key: int, cell_size: int) -> int:
@@ -173,19 +157,13 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
             current = manager.current
             if isinstance(current, GameUIState):
                 cur_layout = make_layout(cell_size_ref[0])
-                if use_ws:
-                    _ws_click(x, y, bridge, controller, cur_layout)
-                else:
-                    controller.click(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
+                controller.click(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
             else:
                 manager.handle_input({"type": "click", "x": x, "y": y})
         elif event == cv2.EVENT_RBUTTONDOWN:
             if isinstance(manager.current, GameUIState):
                 cur_layout = make_layout(cell_size_ref[0])
-                if use_ws:
-                    _ws_jump(x, y, bridge, controller, cur_layout)
-                else:
-                    controller.jump(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
+                controller.jump(x, y, cur_layout.cell_size, cur_layout.board_x, cur_layout.board_y)
 
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(WINDOW, on_mouse)

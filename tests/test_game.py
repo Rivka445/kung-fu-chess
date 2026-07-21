@@ -4,7 +4,8 @@ from core.model.board import Board
 from core.board_io.board_parser import parse_row
 from core.rules.rule_engine import RuleEngine
 from core.engine.game_engine import GameEngine
-from core.input.controller import Controller
+from ui.input.controller import Controller
+from ui.server_bridge.local_bridge import LocalBridge
 
 
 def make_game(rows):
@@ -12,7 +13,7 @@ def make_game(rows):
     for row in rows:
         board.add_parsed_row(parse_row(row, board.expected_cols))
     engine = GameEngine(board, RuleEngine())
-    controller = Controller(engine)
+    controller = Controller(LocalBridge(engine))
     return engine, controller, board
 
 

@@ -2,6 +2,8 @@ import sys
 from core.engine.game_builder import GameBuilder, GameApplication
 from script_test.script_parser import execute
 from core.events.log_listener import LogListener
+from ui.input.controller import Controller
+from ui.server_bridge.local_bridge import LocalBridge
 from constants import CELL_SIZE
 from exceptions import BoardParseError
 from logger import logger
@@ -13,6 +15,7 @@ def run(stream=None):
 
     builder = GameBuilder()
     app: GameApplication | None = None
+    controller: Controller | None = None
 
     in_board = False
     in_commands = False
@@ -27,6 +30,7 @@ def run(stream=None):
         if line_str == "Commands:":
             in_board, in_commands = False, True
             app = builder.build()
+            controller = Controller(LocalBridge(app.engine))
             LogListener(app.engine.bus)
             continue
         if in_board:
@@ -39,4 +43,4 @@ def run(stream=None):
                 print(f"ERROR {code}")
                 sys.exit(0)
         elif in_commands:
-            execute(line_str, app.controller, app.engine)
+            execute(line_str, controller, app.engine)

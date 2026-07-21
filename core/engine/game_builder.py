@@ -3,14 +3,12 @@ from core.model.board import Board
 from core.board_io.board_parser import parse_row
 from core.rules.rule_engine import RuleEngine
 from core.engine.game_engine import GameEngine
-from core.input.controller import Controller
 
 
 @dataclass(frozen=True)
 class GameApplication:
-    """A fully assembled game — holds the engine and the controller."""
+    """A fully assembled game — holds the engine."""
     engine: GameEngine
-    controller: Controller
 
 
 class GameBuilder:
@@ -30,4 +28,4 @@ class GameBuilder:
     def build(self) -> GameApplication:
         """Finalize and return the assembled GameApplication."""
         engine = GameEngine(self._board, RuleEngine())
-        return GameApplication(engine=engine, controller=Controller(engine))
+        return GameApplication(engine=engine)
