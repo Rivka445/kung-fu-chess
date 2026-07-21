@@ -29,6 +29,7 @@ class GameSession:
         self.sockets = {}   # {Color.WHITE: ws, Color.BLACK: ws}
         self.ratings = {}   # {Color.WHITE: rating, Color.BLACK: rating}
         self._ratings_finalized = False
+        self._initial_broadcast_sent = False
         self._disconnect_task = None
         self._disconnect_deadline = None
         self._resigned_color = None
@@ -88,6 +89,20 @@ class GameSession:
                                 white_rating=self.ratings.get(Color.WHITE, STARTING_RATING),
                                 black_rating=self.ratings.get(Color.BLACK, STARTING_RATING),
                                 disconnect_seconds_left=self.disconnect_seconds_left()))
+
+    async def send_initial_broadcast(self):
+        """
+        Send the first post-match state to both players exactly once.
+        Both players' handle() coroutines reach this point independently right
+        after matching, so sending+clearing events per-connection (like a plain
+        send_state does) races: whichever coroutine runs second would find
+        events (e.g. GameStarted) already cleared by the first. Guarding with a
+        flag and using broadcast() (send-to-both-then-clear-once) avoids that.
+        """
+        if self._initial_broadcast_sent:
+            return
+        self._initial_broadcast_sent = True
+        await self.broadcast()
 
     async def broadcast(self):
         self._finalize_ratings()

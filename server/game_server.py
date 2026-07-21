@@ -57,9 +57,11 @@ async def handle(ws):
 
     logger.info("[server] %s (%s) ready", username, "White" if color == Color.WHITE else "Black")
 
-    # Send initial state
-    await session.send_state(ws)
-    session.events.clear()
+    # Send the initial post-match state to both players exactly once — see
+    # send_initial_broadcast's docstring for why a plain per-connection
+    # send_state+clear here would race and could drop GameStarted for
+    # whichever side's coroutine resumes second.
+    await session.send_initial_broadcast()
 
     # ── GAME LOOP ──────────────────────────────────────────────────────────
     try:
