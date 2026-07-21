@@ -1,3 +1,5 @@
+import asyncio
+import time
 from core.engine.game_builder import GameBuilder
 from core.model.position import from_chess_notation
 from core.model.piece import Color
@@ -7,6 +9,7 @@ from server.db import update_ratings, STARTING_RATING
 from constants import DEFAULT_BOARD
 
 ROWS = 8
+DISCONNECT_TIMEOUT_S = 20
 
 
 def _build_engine():
@@ -26,14 +29,44 @@ class GameSession:
         self.sockets = {}   # {Color.WHITE: ws, Color.BLACK: ws}
         self.ratings = {}   # {Color.WHITE: rating, Color.BLACK: rating}
         self._ratings_finalized = False
+        self._disconnect_task = None
+        self._disconnect_deadline = None
+        self._resigned_color = None
         self.engine.start()
 
     def _winner_color(self):
-        """Color of the player whose move captured the enemy king, if any."""
+        """Color of the player who wins: by resignation (disconnect timeout), else by king capture."""
+        if self._resigned_color is not None:
+            return Color.BLACK if self._resigned_color == Color.WHITE else Color.WHITE
         for e in self.events:
             if isinstance(e, Capture) and e.captured_piece.is_king:
                 return e.capturing_color
         return None
+
+    def handle_disconnect(self, color: Color):
+        """Start a DISCONNECT_TIMEOUT_S countdown; the opponent auto-wins if it elapses."""
+        if self.engine.state.game_over or self._disconnect_task is not None:
+            return
+        self._disconnect_deadline = time.monotonic() + DISCONNECT_TIMEOUT_S
+        self._disconnect_task = asyncio.create_task(self._resign_after_timeout(color))
+
+    async def _resign_after_timeout(self, disconnected_color: Color):
+        await asyncio.sleep(DISCONNECT_TIMEOUT_S)
+        if self.engine.state.game_over:
+            return
+        self._resigned_color = disconnected_color
+        self.engine.force_game_over()
+        survivor = Color.BLACK if disconnected_color == Color.WHITE else Color.WHITE
+        try:
+            await self.send_state(self.sockets[survivor])
+        except Exception:
+            pass
+
+    def disconnect_seconds_left(self):
+        """Seconds left before an auto-resign, or None if no disconnect is in progress."""
+        if self._disconnect_deadline is None or self.engine.state.game_over:
+            return None
+        return max(0, round(self._disconnect_deadline - time.monotonic()))
 
     def _finalize_ratings(self):
         """Apply and persist the ELO update once, the moment the game ends."""
@@ -53,15 +86,16 @@ class GameSession:
                                 white_name=self.names.get(Color.WHITE, "White"),
                                 black_name=self.names.get(Color.BLACK, "Black"),
                                 white_rating=self.ratings.get(Color.WHITE, STARTING_RATING),
-                                black_rating=self.ratings.get(Color.BLACK, STARTING_RATING)))
+                                black_rating=self.ratings.get(Color.BLACK, STARTING_RATING),
+                                disconnect_seconds_left=self.disconnect_seconds_left()))
 
     async def broadcast(self):
         self._finalize_ratings()
-        await self.send_state(self.sockets[Color.WHITE])
-        try:
-            await self.send_state(self.sockets[Color.BLACK])
-        except Exception:
-            pass
+        for ws in self.sockets.values():
+            try:
+                await self.send_state(ws)
+            except Exception:
+                pass
         self.events.clear()
 
     def _cmd_move(self, parts, color):
