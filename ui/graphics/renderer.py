@@ -9,6 +9,7 @@ from core.model.board import Board
 from core.model.game_state import GameState
 from core.model.position import Position
 from core.model.piece import Color
+from core.rules.rule_engine import RuleEngine
 from constants import MIN_CELL_SIZE, MAX_CELL_SIZE, BOARD_IMAGE
 
 COL_LETTERS = "ABCDEFGH"
@@ -52,6 +53,7 @@ class Renderer:
         logger           = move_logger or _NullMoveLogger()
         self._panel      = PanelRenderer(logger)
         self._pieces     = PieceRenderer()
+        self._rules      = RuleEngine()
         self._last_cell  = None
         self._board_bg   = None
 
@@ -78,6 +80,25 @@ class Renderer:
         cv2.rectangle(overlay, (x, y), (x + layout.cell_size, y + layout.cell_size), (0, 255, 255, 180), -1)
         cv2.addWeighted(overlay, 0.35, bg, 0.65, 0, bg)
 
+    def _draw_legal_moves(self, bg, board: Board, selected: Position, layout: Layout):
+        piece = board.get_piece(selected)
+        if piece is None:
+            return
+        for target in self._rules.legal_targets(piece, selected, board):
+            x = layout.board_x + target.col * layout.cell_size
+            y = layout.board_y + target.row * layout.cell_size
+            if board.get_piece(target) is not None:
+                # Capture — translucent red square over the threatened piece
+                overlay = bg.copy()
+                cv2.rectangle(overlay, (x, y), (x + layout.cell_size, y + layout.cell_size),
+                              (0, 0, 255, 200), -1)
+                cv2.addWeighted(overlay, 0.35, bg, 0.65, 0, bg)
+            else:
+                # Empty square — small dot marking a reachable move
+                cx = x + layout.cell_size // 2
+                cy = y + layout.cell_size // 2
+                cv2.circle(bg, (cx, cy), layout.cell_size // 8, (60, 200, 60, 220), -1)
+
     def _draw_game_over(self, canvas: Img, state: GameState, layout: Layout):
         if state.game_over:
             canvas.put_text("GAME OVER", layout.board_x + layout.board_size // 4,
@@ -99,6 +120,8 @@ class Renderer:
         self._panel.draw(bg, 0, Color.BLACK, layout)
         self._panel.draw(bg, SIDEBAR_W + COORD_SIZE + layout.board_size + COORD_SIZE, Color.WHITE, layout)
         self._draw_selection(bg, selected, layout)
+        if selected is not None:
+            self._draw_legal_moves(bg, board, selected, layout)
         self._pieces.draw_all(canvas, board, state, layout)
         self._draw_game_over(canvas, state, layout)
         return canvas, layout

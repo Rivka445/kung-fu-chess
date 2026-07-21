@@ -27,3 +27,13 @@ class RuleEngine:
             return False
         strategy = MOVE_STRATEGIES.get(piece.type)
         return strategy is not None and strategy.is_legal(piece, source, target, board)
+
+    def legal_targets(self, piece: Piece, source: Position, board) -> list[Position]:
+        """Return every board position the given piece can legally move to from source."""
+        targets = []
+        for row in range(len(board.matrix)):
+            for col in range(board.expected_cols):
+                target = Position(row, col)
+                if self.is_legal(piece, source, target, board):
+                    targets.append(target)
+        return targets
