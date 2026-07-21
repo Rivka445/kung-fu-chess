@@ -66,6 +66,9 @@ def _build_bridge(use_ws: bool = False, white_name: str = "White", black_name: s
                                  white_name=white_name, black_name=black_name)
     SoundManager(bus)
     controller = Controller(bridge)
+    if not use_ws:
+        # All local listeners are wired now — safe to announce game start.
+        app.engine.start()
     return bridge, controller, move_logger
 
 

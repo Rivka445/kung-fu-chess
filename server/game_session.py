@@ -22,6 +22,7 @@ class GameSession:
         self.events  = make_event_collector(self.engine.bus)
         self.names   = {}   # {Color.WHITE: name, Color.BLACK: name}
         self.sockets = {}   # {Color.WHITE: ws, Color.BLACK: ws}
+        self.engine.start()
 
     async def send_state(self, ws):
         await ws.send(serialize(self.engine.board, self.engine.state, self.events,

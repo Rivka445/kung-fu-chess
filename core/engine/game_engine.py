@@ -21,6 +21,13 @@ class GameEngine:
         self.state = GameState()
         self.bus = EventBus()
         self._arbiter = RealTimeArbiter(board, self.bus)
+
+    def start(self):
+        """
+        Announce the game has started. Call this only after all listeners
+        (sound, move log, ...) have subscribed to self.bus — publishing from
+        the constructor would fire before any caller has a chance to attach one.
+        """
         self.bus.publish(GameStarted())
 
     def request_move(self, source: Position, target: Position):
