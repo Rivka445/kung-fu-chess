@@ -1,7 +1,7 @@
 import numpy as np
-from ui.graphics.img import Img
-from ui.graphics.sprite import get_sprite_sheet, piece_state
-from ui.graphics.theme import COORD_SIZE, SIDEBAR_W
+from client.graphics.img import Img
+from client.graphics.sprite import get_sprite_sheet, piece_state
+from client.graphics.theme import COORD_SIZE, SIDEBAR_W
 from core.model.board import Board
 from core.model.game_state import GameState
 from core.model.position import Position

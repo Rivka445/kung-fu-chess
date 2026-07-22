@@ -1,4 +1,4 @@
-from ui.engine_bridge.base import EngineBridge
+from client.engine_bridge.base import EngineBridge
 from core.engine.game_engine import GameEngine
 from core.model.position import Position
 from core.model.board import Board

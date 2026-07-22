@@ -2,8 +2,8 @@ import sys
 from core.engine.game_builder import GameBuilder, GameApplication
 from script_test.script_parser import execute
 from core.events.log_listener import LogListener
-from ui.input.controller import Controller
-from ui.engine_bridge.local_bridge import LocalBridge
+from client.input.controller import Controller
+from client.engine_bridge.local_bridge import LocalBridge
 from constants import CELL_SIZE
 from exceptions import BoardParseError
 from logger import logger

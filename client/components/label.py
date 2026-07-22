@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-from ui.graphics.theme import FONT, WHITE_TXT
+from client.graphics.theme import FONT, WHITE_TXT
 
 
-from ui.components.base import UIComponent
+from client.components.base import UIComponent
 
 
 class Label(UIComponent):

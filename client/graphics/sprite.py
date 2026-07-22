@@ -1,6 +1,6 @@
 import json
 import pathlib
-from ui.graphics.img import Img
+from client.graphics.img import Img
 from constants import PIECES_DIR
 
 

@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
-from ui.state.state_manager import StateManager
-from ui.state.base import UIState
-from ui.components.button import Button
-from ui.components.label import Label
-from ui.state.menu_state import MenuState
-from ui.state.game_over_state import GameOverState
+from client.state.state_manager import StateManager
+from client.state.base import UIState
+from client.components.button import Button
+from client.components.label import Label
+from client.state.menu_state import MenuState
+from client.state.game_over_state import GameOverState
 
 class MockState(UIState):
     def __init__(self):
@@ -117,7 +117,7 @@ def test_game_over_state_clicks():
 
 
 def test_ui_container():
-    from ui.components.container import UIContainer
+    from client.components.container import UIContainer
     container = UIContainer()
     btn = Button(10, 20, 100, 50, "Test")
     lbl = Label(10, 20, "Hello")

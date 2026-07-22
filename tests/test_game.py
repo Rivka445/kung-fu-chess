@@ -4,8 +4,8 @@ from core.model.board import Board
 from core.board_io.board_parser import parse_row
 from core.rules.rule_engine import RuleEngine
 from core.engine.game_engine import GameEngine
-from ui.input.controller import Controller
-from ui.engine_bridge.local_bridge import LocalBridge
+from client.input.controller import Controller
+from client.engine_bridge.local_bridge import LocalBridge
 
 
 def make_game(rows):

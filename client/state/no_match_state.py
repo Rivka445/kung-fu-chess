@@ -1,9 +1,9 @@
 import numpy as np
-from ui.state.base import UIState
-from ui.components.button import Button
-from ui.components.label import Label
-from ui.components.container import UIContainer
-from ui.graphics.theme import GOLD
+from client.state.base import UIState
+from client.components.button import Button
+from client.components.label import Label
+from client.components.container import UIContainer
+from client.graphics.theme import GOLD
 
 
 class NoMatchState(UIState):

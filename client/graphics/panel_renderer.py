@@ -1,8 +1,8 @@
 import cv2
 from core.model.piece import Color
-from ui.graphics.theme import (SIDEBAR_W, FONT, GOLD, WHITE_TXT, GRAY_TXT, DIVIDER, PANEL_BG,
+from client.graphics.theme import (SIDEBAR_W, FONT, GOLD, WHITE_TXT, GRAY_TXT, DIVIDER, PANEL_BG,
                                SWATCH_WHITE, SWATCH_BLACK)
-from ui.graphics.unicode_text import draw_unicode_text
+from client.graphics.unicode_text import draw_unicode_text
 
 
 def _txt(bg, text, x, y, scale=0.5, color=WHITE_TXT, bold=False):

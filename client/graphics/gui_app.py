@@ -1,16 +1,16 @@
 import cv2
 import time
 import numpy as np
-from ui.graphics.renderer import Renderer, make_layout
-from ui.graphics.session import build_bridge, build_move_logger_for_match
-from ui.state.state_manager import StateManager
-from ui.state.menu_state import MenuState
-from ui.state.searching_state import SearchingState
-from ui.state.no_match_state import NoMatchState
-from ui.state.game_ui_state import GameUIState
-from ui.state.game_over_state import GameOverState
+from client.graphics.renderer import Renderer, make_layout
+from client.graphics.session import build_bridge, build_move_logger_for_match
+from client.state.state_manager import StateManager
+from client.state.menu_state import MenuState
+from client.state.searching_state import SearchingState
+from client.state.no_match_state import NoMatchState
+from client.state.game_ui_state import GameUIState
+from client.state.game_over_state import GameOverState
 from constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP
-from ui.graphics.theme import DARK_BG
+from client.graphics.theme import DARK_BG
 
 WINDOW = "Kung-Fu Chess"
 

@@ -14,7 +14,7 @@ core/real_time  — ביצוע בזמן אמת + התנגשויות
 core/engine     — Facade מרכזי (GameEngine)
 core/input      — תרגום קלט → engine
 core/events     — Observer notifications
-ui/             — רנדור + מסכים + bridge
+client/             — רנדור + מסכים + bridge
 ```
 
 כל שכבה תלויה רק בשכבות מתחתיה.
@@ -40,17 +40,17 @@ ui/             — רנדור + מסכים + bridge
 - Fluent API: `GameBuilder().with_row(...).with_listener(...).build()`
 - מחזיר `GameApplication(engine, controller)`
 
-### Bridge — `ui/engine_bridge/`
+### Bridge — `client/engine_bridge/`
 - `EngineBridge` (ABC) מנתק את ה-UI מה-engine
 - `LocalBridge` — מימוש מקומי ישיר ל-`GameEngine`
 - `WebSocketBridge` — מימוש מרוחק מול השרת דרך WebSocket
 
-### State — `ui/state/`
+### State — `client/state/`
 - `UIState` (ABC): `on_enter`, `on_exit`, `handle_input`, `update`
 - `StateManager` מנהל מעברים בין: `MenuState` → `GameUIState` → `GameOverState`
 - המעבר ל-GameOver מזוהה ב-`gui_app.py` כשמגלים `bridge.get_state().game_over == True`
 
-### Composite — `ui/components/`
+### Composite — `client/components/`
 - `UIComponent` (ABC) עם `draw(canvas)`
 - `UIContainer` מחזיק רשימת `UIComponent` ומצייר את כולם — `MenuState` ו-`GameOverState` משתמשים בו
 
@@ -58,7 +58,7 @@ ui/             — רנדור + מסכים + bridge
 - כל פקודת סקריפט (`click`, `wait`, `jump`, `print`) היא מחלקת `Command` נפרדת
 - `@register("name")` decorator רושם אוטומטית ל-`_REGISTRY`
 
-### Cache — `ui/graphics/sprite.py`
+### Cache — `client/graphics/sprite.py`
 - `get_sprite_sheet(piece)` מחזיר מ-`_cache` dict — טעינה מהדיסק פעם אחת בלבד
 
 ---

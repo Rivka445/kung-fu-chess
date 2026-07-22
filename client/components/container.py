@@ -1,5 +1,5 @@
 import numpy as np
-from ui.components.base import UIComponent
+from client.components.base import UIComponent
 
 
 class UIContainer(UIComponent):

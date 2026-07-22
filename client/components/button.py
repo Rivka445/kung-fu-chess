@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-from ui.graphics.theme import FONT, PANEL_BG, WHITE_TXT, GOLD
+from client.graphics.theme import FONT, PANEL_BG, WHITE_TXT, GOLD
 
 
-from ui.components.base import UIComponent
+from client.components.base import UIComponent
 
 
 class Button(UIComponent):

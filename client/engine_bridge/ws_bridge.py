@@ -8,7 +8,7 @@ from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
 from core.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
                                     PawnPromoted, GameStarted, GameOver)
-from ui.engine_bridge.base import EngineBridge
+from client.engine_bridge.base import EngineBridge
 from logger import logger
 
 HOST = "localhost"

@@ -1,10 +1,10 @@
 import numpy as np
 import cv2
 from dataclasses import dataclass
-from ui.graphics.img import Img
-from ui.graphics.theme import SIDEBAR_W, COORD_SIZE, FONT, DARK_BG, GRAY_TXT, WHITE_TXT
-from ui.graphics.panel_renderer import PanelRenderer
-from ui.graphics.piece_renderer import PieceRenderer
+from client.graphics.img import Img
+from client.graphics.theme import SIDEBAR_W, COORD_SIZE, FONT, DARK_BG, GRAY_TXT, WHITE_TXT
+from client.graphics.panel_renderer import PanelRenderer
+from client.graphics.piece_renderer import PieceRenderer
 from core.model.board import Board
 from core.model.game_state import GameState
 from core.model.position import Position

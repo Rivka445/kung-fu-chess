@@ -1,5 +1,5 @@
-from ui.state.base import UIState
-from ui.engine_bridge.base import EngineBridge
+from client.state.base import UIState
+from client.engine_bridge.base import EngineBridge
 
 
 class GameUIState(UIState):

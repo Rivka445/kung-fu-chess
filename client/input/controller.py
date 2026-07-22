@@ -1,4 +1,4 @@
-from ui.engine_bridge.base import EngineBridge
+from client.engine_bridge.base import EngineBridge
 from core.input.board_mapper import pixel_to_pos
 from core.model.position import Position
 
