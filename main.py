@@ -7,7 +7,7 @@ if __name__ == "__main__":
         from ui.graphics.gui_app import run
         # Username entered in shell, server assigns color
         username = input("Enter your username: ").strip() or "Player"
-        run(use_ws=True, white_name=username, black_name=username)
+        run(username)
     else:
         from script_test.script_runner import run
         run()

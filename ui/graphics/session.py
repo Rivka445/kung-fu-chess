@@ -1,11 +1,8 @@
-from core.engine.game_builder import GameBuilder
 from core.events.event_bus import EventBus, GameStarted, GameOver
 from core.events.move_logger import MoveLogger
 from ui.sound.sound_manager import SoundManager
-from ui.server_bridge.local_bridge import LocalBridge
 from ui.server_bridge.ws_bridge import WebSocketBridge
 from ui.input.controller import Controller
-from constants import DEFAULT_BOARD
 from core.model.piece import Color
 
 
@@ -33,38 +30,25 @@ class _MatchFoundWatch:
         bus.subscribe(GameStarted, lambda e: setattr(self, "matched", True))
 
 
-def build_bridge(use_ws: bool = False, white_name: str = "White", black_name: str = "Black") -> tuple:
-    if use_ws:
-        # WS mode: the server owns the real GameEngine/RuleEngine — this process
-        # never builds one. It only mirrors the state the server sends and renders it,
-        # via a plain EventBus for local listeners (sound, move log) to subscribe to.
-        #
-        # Only login happens here — matchmaking is deferred until the player clicks
-        # Play (SearchingState calls bridge.start_search()). Player names aren't known
-        # until a match is found, so move_logger is built later too (see
-        # build_move_logger_for_match), once GameStarted fires.
-        bus = EventBus()
-        bridge = WebSocketBridge(bus, username=white_name)
-        bridge.login()
-        move_logger = None
-    else:
-        # Local (hot-seat) mode: no server exists, so this process runs the real
-        # GameEngine itself.
-        builder = GameBuilder()
-        for row in DEFAULT_BOARD:
-            builder.with_row(row)
-        app = builder.build()
-        bus = app.engine.bus
-        bridge = LocalBridge(app.engine)
-        move_logger = MoveLogger(app.engine.board, bus,
-                                 white_name=white_name, black_name=black_name)
+def build_bridge(username: str = "Player") -> tuple:
+    """
+    The server owns the real GameEngine/RuleEngine — this process never builds
+    one. It only mirrors the state the server sends and renders it, via a plain
+    EventBus for local listeners (sound, move log) to subscribe to.
+
+    Only login happens here — matchmaking is deferred until the player clicks
+    Play (SearchingState calls bridge.start_search()). Player names aren't known
+    until a match is found, so move_logger is built later too (see
+    build_move_logger_for_match), once GameStarted fires.
+    """
+    bus = EventBus()
+    bridge = WebSocketBridge(bus, username=username)
+    bridge.login()
+    move_logger = None
     SoundManager(bus)
     game_over_watch = _GameOverWatch(bus)
     match_found_watch = _MatchFoundWatch(bus)
     controller = Controller(bridge)
-    if not use_ws:
-        # All local listeners are wired now — safe to announce game start.
-        app.engine.start()
     return bridge, controller, move_logger, game_over_watch, match_found_watch, bus
 
 

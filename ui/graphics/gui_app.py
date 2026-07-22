@@ -56,13 +56,12 @@ def _handle_zoom(key: int, cell_size: int) -> int:
     return new_cell
 
 
-def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Black"):
+def run(username: str = "Player"):
     """Main GUI entry point — creates the OpenCV window and runs the ~60 fps game loop."""
     cell_size = CELL_SIZE
     layout = make_layout(cell_size)
 
-    bridge, controller, move_logger, game_over_watch, match_found_watch, bus = build_bridge(
-        use_ws, white_name, black_name)
+    bridge, controller, move_logger, game_over_watch, match_found_watch, bus = build_bridge(username)
     renderer = Renderer(move_logger)
 
     def start_game():
@@ -81,23 +80,16 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
     def back_to_menu():
         nonlocal manager
         manager.transition(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h,
-                                     on_play=start_search if use_ws else None))
+                                     on_play=start_search))
 
     def restart():
-        nonlocal bridge, controller, move_logger, renderer, manager, game_over_watch, match_found_watch, bus
-        if use_ws:
-            # Same, already-authenticated connection — just search again.
-            match_found_watch.matched = False
-            game_over_watch.game_over = False
-            manager.transition(SearchingState(bridge, layout.canvas_w, layout.canvas_h))
-        else:
-            bridge, controller, move_logger, game_over_watch, match_found_watch, bus = build_bridge(
-                use_ws, white_name, black_name)
-            renderer = Renderer(move_logger)
-            manager.transition(GameUIState(bridge))
+        # Same, already-authenticated connection — just search again.
+        match_found_watch.matched = False
+        game_over_watch.game_over = False
+        manager.transition(SearchingState(bridge, layout.canvas_w, layout.canvas_h))
 
     manager = StateManager(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h,
-                                     on_play=start_search if use_ws else None))
+                                     on_play=start_search))
 
     cell_size_ref = [cell_size]  # mutable container so on_mouse can read current value
 
@@ -120,9 +112,9 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
     def _run_loop():
         """
         Run the ~60 fps game loop until the user quits.
-        Nested so it always sees the latest bridge/controller/renderer/game_over_watch —
-        restart() rebinds those via nonlocal, and a plain (non-nested) function taking
-        them as parameters would keep rendering the stale, already-finished game.
+        Nested so it can rebind move_logger/renderer via nonlocal once a WS match
+        is found — a plain (non-nested) function taking them as parameters would
+        keep rendering the stale, pre-match placeholders.
         """
         nonlocal cell_size, move_logger, renderer
         last = time.perf_counter()
@@ -140,7 +132,7 @@ def run(use_ws: bool = False, white_name: str = "White", black_name: str = "Blac
             cell_size_ref[0] = cell_size
 
             if isinstance(manager.current, SearchingState) and match_found_watch.matched:
-                move_logger = build_move_logger_for_match(bridge, bus, white_name)
+                move_logger = build_move_logger_for_match(bridge, bus, username)
                 renderer = Renderer(move_logger)
                 manager.transition(GameUIState(bridge))
             elif isinstance(manager.current, SearchingState) and bridge.search_status == "timed_out":
