@@ -23,15 +23,19 @@ chess-project/
 │   ├── model/              # Core domain — board, pieces, positions, game state
 │   ├── real_time/          # Real-time execution and collision resolution
 │   └── rules/              # Chess move legality
-├── client/                     # User Interface & Graphics Layer
+├── client/                     # Client-side Layer (UI, networking, sound)
 │   ├── components/         # Reusable UI components (Button, Label)
-│   ├── graphics/           # Rendering, sprites, and GUI loop (OpenCV)
-│   ├── engine_bridge/      # Bridge Pattern — decouples UI from engine
-│   └── state/              # State Pattern — UI screens (Menu, Game, GameOver)
+│   ├── graphics/           # Rendering and sprites (OpenCV)
+│   ├── engine_bridge/      # Bridge Pattern — decouples UI from engine (local or WS)
+│   ├── input/               # Mouse click handling
+│   ├── sound/                # Sound effects
+│   ├── state/               # State Pattern — UI screens (Menu, Game, GameOver)
+│   ├── gui_app.py           # Main GUI loop entry point
+│   └── session.py           # Wires bridge/bus/sound/controller together
+├── server/                 # WebSocket server, matchmaking, ELO, SQLite login
 ├── script_test/            # Script-based simulation runner
-├── tests/                  # Unit and integration tests (100% passing)
-├── main.py                 # Entry point (runs script runner or GUI)
-└── app.py                  # Alternative entry point
+├── tests/                  # Unit and integration tests
+└── main.py                 # Entry point (runs script runner or GUI)
 ```
 
 ---
@@ -39,7 +43,7 @@ chess-project/
 ## Architecture
 ```
 ┌─────────────────────────────────────────┐
-│         client/graphics (GUIApp)            │  ← UI Loop (OpenCV window, ~60fps)
+│         client/gui_app.py (GUIApp)          │  ← UI Loop (OpenCV window, ~60fps)
 └────────────────────┬────────────────────┘
                      │
 ┌────────────────────▼────────────────────┐

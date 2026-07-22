@@ -2,7 +2,7 @@ import cv2
 import time
 import numpy as np
 from client.graphics.renderer import Renderer, make_layout
-from client.graphics.session import build_bridge, build_move_logger_for_match
+from client.session import build_bridge, build_move_logger_for_match
 from client.state.state_manager import StateManager
 from client.state.menu_state import MenuState
 from client.state.searching_state import SearchingState
