@@ -9,5 +9,5 @@ if __name__ == "__main__":
         username = input("Enter your username: ").strip() or "Player"
         run(username)
     else:
-        from script_test.script_runner import run
+        from scripts.script_test.script_runner import run
         run()

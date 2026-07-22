@@ -2,10 +2,10 @@ import numpy as np
 from client.graphics.img import Img
 from client.graphics.sprite import get_sprite_sheet, piece_state
 from client.graphics.theme import COORD_SIZE, SIDEBAR_W
-from core.model.board import Board
-from core.model.game_state import GameState
-from core.model.position import Position
-from constants import MOVE_DURATION
+from shared.model.board import Board
+from shared.model.game_state import GameState
+from shared.model.position import Position
+from shared.constants.constants import MOVE_DURATION
 
 
 def _pos_to_px(pos: Position, layout) -> tuple[int, int]:

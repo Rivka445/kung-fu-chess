@@ -3,7 +3,7 @@ import io
 
 import pytest
 from io import StringIO
-from script_test.script_runner import run
+from scripts.script_test.script_runner import run
 
 
 def run_script(script: str) -> str:

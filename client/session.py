@@ -1,9 +1,9 @@
-from core.events.event_bus import EventBus, GameStarted, GameOver
-from core.events.move_logger import MoveLogger
+from shared.events.event_bus import EventBus, GameStarted, GameOver
+from client.services.move_logger import MoveLogger
 from client.sound.sound_manager import SoundManager
 from client.engine_bridge.ws_bridge import WebSocketBridge
 from client.input.controller import Controller
-from core.model.piece import Color
+from shared.model.piece import Color
 
 
 class _GameOverWatch:

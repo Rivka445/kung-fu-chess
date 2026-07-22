@@ -3,9 +3,9 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from core.model.piece import Piece
-from core.board_io.board_parser import parse_row
-from exceptions import EmptyRowError, RowWidthMismatchError, UnknownTokenError
+from shared.model.piece import Piece
+from server.utils.board_parser import parse_row
+from shared.helpers.exceptions import EmptyRowError, RowWidthMismatchError, UnknownTokenError
 
 
 def test_valid_row():

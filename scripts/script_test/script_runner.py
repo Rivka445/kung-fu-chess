@@ -1,0 +1,46 @@
+import sys
+from server.game.engine.game_builder import GameBuilder, GameApplication
+from scripts.script_test.script_parser import execute
+from scripts.script_test.log_listener import LogListener
+from client.input.controller import Controller
+from client.engine_bridge.local_bridge import LocalBridge
+from shared.constants.constants import CELL_SIZE
+from shared.helpers.exceptions import BoardParseError
+from shared.helpers.logger import logger
+
+
+def run(stream=None):
+    if stream is None:
+        stream = sys.stdin
+
+    builder = GameBuilder()
+    app: GameApplication | None = None
+    controller: Controller | None = None
+
+    in_board = False
+    in_commands = False
+
+    for line in stream:
+        line_str = line.strip()
+        if not line_str:
+            continue
+        if line_str == "Board:":
+            in_board, in_commands = True, False
+            continue
+        if line_str == "Commands:":
+            in_board, in_commands = False, True
+            app = builder.build()
+            controller = Controller(LocalBridge(app.engine))
+            LogListener(app.engine.bus)
+            continue
+        if in_board:
+            try:
+                builder.with_row(line_str)
+            except BoardParseError as e:
+                logger.error("board parse error: %s", e)
+                code = type(e).__name__.replace("Error", "")
+                code = "".join(f"_{c}" if c.isupper() and i > 0 else c for i, c in enumerate(code)).upper()
+                print(f"ERROR {code}")
+                sys.exit(0)
+        elif in_commands:
+            execute(line_str, controller, app.engine)

@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from core.model.piece import Piece, Color, PieceType
+from shared.model.piece import Piece, Color, PieceType
 
 
 def test_from_str():

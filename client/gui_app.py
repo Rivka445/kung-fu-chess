@@ -9,7 +9,7 @@ from client.state.searching_state import SearchingState
 from client.state.no_match_state import NoMatchState
 from client.state.game_ui_state import GameUIState
 from client.state.game_over_state import GameOverState
-from constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP
+from shared.constants.constants import CELL_SIZE, MIN_CELL_SIZE, MAX_CELL_SIZE, ZOOM_STEP
 from client.graphics.theme import DARK_BG
 
 WINDOW = "Kung-Fu Chess"

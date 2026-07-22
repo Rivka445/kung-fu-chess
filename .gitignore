@@ -4,4 +4,4 @@ __pycache__/
 .vscode/
 htmlcov/
 .coverage
-server/data/
+server/db/data/

@@ -1,9 +1,9 @@
-from core.model.position import Position
-from core.model.piece import Piece
-from core.model.board import Board
-from core.board_io.board_parser import parse_row
-from core.rules.rule_engine import RuleEngine
-from core.engine.game_engine import GameEngine
+from shared.model.position import Position
+from shared.model.piece import Piece
+from shared.model.board import Board
+from server.utils.board_parser import parse_row
+from server.game.rules.rule_engine import RuleEngine
+from server.game.engine.game_engine import GameEngine
 from client.input.controller import Controller
 from client.engine_bridge.local_bridge import LocalBridge
 

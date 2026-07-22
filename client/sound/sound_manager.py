@@ -2,8 +2,8 @@ import queue
 import threading
 from pathlib import Path
 from playsound import playsound
-from core.events.event_bus import EventBus, MoveApplied, Capture, GameOver
-from logger import logger
+from shared.events.event_bus import EventBus, MoveApplied, Capture, GameOver
+from shared.helpers.logger import logger
 
 _DIR = Path(__file__).parent
 

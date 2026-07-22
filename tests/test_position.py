@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from core.model.position import Position
+from shared.model.position import Position
 
 
 def test_iter():

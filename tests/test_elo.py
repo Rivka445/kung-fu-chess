@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from server.elo import apply, expected_score
+from server.services.elo import apply, expected_score
 
 
 def test_expected_score_equal_ratings():

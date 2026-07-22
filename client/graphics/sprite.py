@@ -1,7 +1,7 @@
 import json
 import pathlib
 from client.graphics.img import Img
-from constants import PIECES_DIR
+from shared.constants.constants import PIECES_DIR
 
 
 # Maps (piece_type_char, color_char) -> folder name  e.g. ('P','W') -> 'PW'

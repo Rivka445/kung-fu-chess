@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from server.db import authenticate_or_register, get_rating, update_ratings, AuthError, STARTING_RATING
+from server.db.db import authenticate_or_register, get_rating, update_ratings, AuthError, STARTING_RATING
 
 
 @pytest.fixture

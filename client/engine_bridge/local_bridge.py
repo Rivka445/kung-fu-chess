@@ -1,8 +1,8 @@
 from client.engine_bridge.base import EngineBridge
-from core.engine.game_engine import GameEngine
-from core.model.position import Position
-from core.model.board import Board
-from core.model.game_state import GameState
+from server.game.engine.game_engine import GameEngine
+from shared.model.position import Position
+from shared.model.board import Board
+from shared.model.game_state import GameState
 
 
 class LocalBridge(EngineBridge):

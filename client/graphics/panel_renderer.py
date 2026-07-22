@@ -1,5 +1,5 @@
 import cv2
-from core.model.piece import Color
+from shared.model.piece import Color
 from client.graphics.theme import (SIDEBAR_W, FONT, GOLD, WHITE_TXT, GRAY_TXT, DIVIDER, PANEL_BG,
                                SWATCH_WHITE, SWATCH_BLACK)
 from client.graphics.unicode_text import draw_unicode_text

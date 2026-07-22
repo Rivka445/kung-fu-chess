@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from core.model.position import Position
-from core.model.board import Board
-from core.model.game_state import GameState
+from shared.model.position import Position
+from shared.model.board import Board
+from shared.model.game_state import GameState
 
 
 class EngineBridge(ABC):

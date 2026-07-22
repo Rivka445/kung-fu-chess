@@ -2,14 +2,14 @@ import getpass
 import json
 import threading
 import websockets.sync.client as ws_sync
-from core.model.position import Position, to_chess_notation, from_chess_notation
-from core.model.board import Board
-from core.model.game_state import GameState, PendingMove, AirbornePiece
-from core.model.piece import Piece, PieceType, Color
-from core.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
+from shared.model.position import Position, to_chess_notation, from_chess_notation
+from shared.model.board import Board
+from shared.model.game_state import GameState, PendingMove, AirbornePiece
+from shared.model.piece import Piece, PieceType, Color
+from shared.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
                                     PawnPromoted, GameStarted, GameOver)
 from client.engine_bridge.base import EngineBridge
-from logger import logger
+from shared.helpers.logger import logger
 
 HOST = "localhost"
 PORT = 8765

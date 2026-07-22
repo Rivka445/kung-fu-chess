@@ -5,12 +5,12 @@ from client.graphics.img import Img
 from client.graphics.theme import SIDEBAR_W, COORD_SIZE, FONT, DARK_BG, GRAY_TXT, WHITE_TXT
 from client.graphics.panel_renderer import PanelRenderer
 from client.graphics.piece_renderer import PieceRenderer
-from core.model.board import Board
-from core.model.game_state import GameState
-from core.model.position import Position
-from core.model.piece import Color
-from core.rules.rule_engine import RuleEngine
-from constants import MIN_CELL_SIZE, MAX_CELL_SIZE, BOARD_IMAGE
+from shared.model.board import Board
+from shared.model.game_state import GameState
+from shared.model.position import Position
+from shared.model.piece import Color
+from server.game.rules.rule_engine import RuleEngine
+from shared.constants.constants import MIN_CELL_SIZE, MAX_CELL_SIZE, BOARD_IMAGE
 
 COL_LETTERS = "ABCDEFGH"
 
