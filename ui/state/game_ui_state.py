@@ -1,9 +1,9 @@
 from ui.state.base import UIState
-from ui.server_bridge.base import ServerBridge
+from ui.engine_bridge.base import EngineBridge
 
 
 class GameUIState(UIState):
-    def __init__(self, bridge: ServerBridge):
+    def __init__(self, bridge: EngineBridge):
         self._bridge = bridge
 
     def on_enter(self) -> None: pass

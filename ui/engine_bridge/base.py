@@ -4,7 +4,7 @@ from core.model.board import Board
 from core.model.game_state import GameState
 
 
-class ServerBridge(ABC):
+class EngineBridge(ABC):
     @abstractmethod
     def login(self) -> None: ...
 

@@ -1,17 +1,17 @@
-from ui.server_bridge.base import ServerBridge
+from ui.engine_bridge.base import EngineBridge
 from core.input.board_mapper import pixel_to_pos
 from core.model.position import Position
 
 
 class Controller:
     """
-    Handles player input and translates it into calls on a ServerBridge.
+    Handles player input and translates it into calls on a EngineBridge.
     Manages click-based piece selection and move submission.
     Works the same way for local and networked play — the bridge decides
     where the move actually goes.
     """
 
-    def __init__(self, bridge: ServerBridge):
+    def __init__(self, bridge: EngineBridge):
         self._bridge = bridge
         self._selected: Position | None = None  # Currently selected square (first click)
 

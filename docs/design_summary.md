@@ -40,10 +40,10 @@ ui/             — רנדור + מסכים + bridge
 - Fluent API: `GameBuilder().with_row(...).with_listener(...).build()`
 - מחזיר `GameApplication(engine, controller)`
 
-### Bridge — `ui/server_bridge/`
-- `ServerBridge` (ABC) מנתק את ה-UI מה-engine
+### Bridge — `ui/engine_bridge/`
+- `EngineBridge` (ABC) מנתק את ה-UI מה-engine
 - `LocalBridge` — מימוש מקומי ישיר ל-`GameEngine`
-- מאפשר להחליף ל-NetworkBridge בעתיד בלי לשנות את ה-UI
+- `WebSocketBridge` — מימוש מרוחק מול השרת דרך WebSocket
 
 ### State — `ui/state/`
 - `UIState` (ABC): `on_enter`, `on_exit`, `handle_input`, `update`

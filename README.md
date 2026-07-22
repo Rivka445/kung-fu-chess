@@ -26,7 +26,7 @@ chess-project/
 ├── ui/                     # User Interface & Graphics Layer
 │   ├── components/         # Reusable UI components (Button, Label)
 │   ├── graphics/           # Rendering, sprites, and GUI loop (OpenCV)
-│   ├── server_bridge/      # Bridge Pattern — decouples UI from engine
+│   ├── engine_bridge/      # Bridge Pattern — decouples UI from engine
 │   └── state/              # State Pattern — UI screens (Menu, Game, GameOver)
 ├── script_test/            # Script-based simulation runner
 ├── tests/                  # Unit and integration tests (100% passing)
@@ -47,7 +47,7 @@ chess-project/
 └────────────────────┬────────────────────┘
                      │
 ┌────────────────────▼────────────────────┐
-│     ui/server_bridge (ServerBridge)     │  ← Bridge Pattern (Decouples UI & Engine)
+│     ui/engine_bridge (EngineBridge)     │  ← Bridge Pattern (Decouples UI & Engine)
 └────────────────────┬────────────────────┘
                      │
 ┌────────────────────▼────────────────────┐
@@ -81,7 +81,7 @@ chess-project/
 | **Observer** | `core/events/` | Listeners react to game events without coupling to the engine |
 | **Facade** | `GameEngine`, `RuleEngine` | Simple interfaces hiding internal complexity |
 | **Builder** | `core/engine/game_builder.py` | Fluent API for constructing a game row by row |
-| **Bridge** | `ui/server_bridge/` | Decouples UI from the engine, allowing local or network play |
+| **Bridge** | `ui/engine_bridge/` | Decouples UI from the engine, allowing local or network play |
 | **State** | `ui/state/` | Manages UI screens (Menu, Game, GameOver) as separate state objects |
 | **Composite** | `ui/components/` | `UIContainer` acts as a composite component holding multiple `UIComponent` children |
 | **Command** | `script_test/script_parser.py` | Each script command is an encapsulated object registered by name |

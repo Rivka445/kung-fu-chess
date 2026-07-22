@@ -8,7 +8,7 @@ from core.model.game_state import GameState, PendingMove, AirbornePiece
 from core.model.piece import Piece, PieceType, Color
 from core.events.event_bus import (EventBus, MoveApplied, Capture, KingCaptured, Collision,
                                     PawnPromoted, GameStarted, GameOver)
-from ui.server_bridge.base import ServerBridge
+from ui.engine_bridge.base import EngineBridge
 from logger import logger
 
 HOST = "localhost"
@@ -72,7 +72,7 @@ def _publish_events(data: dict, bus: EventBus):
             bus.publish(builder(e))
 
 
-class WebSocketBridge(ServerBridge):
+class WebSocketBridge(EngineBridge):
     """
     The server pushes a fresh state to BOTH players after any single player's
     command (so opponent moves show up too) — it is not a strict 1-reply-per-

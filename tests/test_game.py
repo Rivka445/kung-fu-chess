@@ -5,7 +5,7 @@ from core.board_io.board_parser import parse_row
 from core.rules.rule_engine import RuleEngine
 from core.engine.game_engine import GameEngine
 from ui.input.controller import Controller
-from ui.server_bridge.local_bridge import LocalBridge
+from ui.engine_bridge.local_bridge import LocalBridge
 
 
 def make_game(rows):

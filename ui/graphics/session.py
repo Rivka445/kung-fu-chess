@@ -1,7 +1,7 @@
 from core.events.event_bus import EventBus, GameStarted, GameOver
 from core.events.move_logger import MoveLogger
 from ui.sound.sound_manager import SoundManager
-from ui.server_bridge.ws_bridge import WebSocketBridge
+from ui.engine_bridge.ws_bridge import WebSocketBridge
 from ui.input.controller import Controller
 from core.model.piece import Color
 

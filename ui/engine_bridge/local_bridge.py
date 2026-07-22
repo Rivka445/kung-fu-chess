@@ -1,11 +1,11 @@
-from ui.server_bridge.base import ServerBridge
+from ui.engine_bridge.base import EngineBridge
 from core.engine.game_engine import GameEngine
 from core.model.position import Position
 from core.model.board import Board
 from core.model.game_state import GameState
 
 
-class LocalBridge(ServerBridge):
+class LocalBridge(EngineBridge):
     """Local implementation — talks directly to GameEngine, no network."""
 
     def __init__(self, engine: GameEngine):
