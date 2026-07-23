@@ -64,10 +64,6 @@ def run(username: str = "Player"):
     bridge, controller, move_logger, game_over_watch, match_found_watch, bus = build_bridge(username)
     renderer = Renderer(move_logger)
 
-    def start_game():
-        nonlocal manager
-        manager.transition(GameUIState(bridge))
-
     def start_search():
         nonlocal manager
         match_found_watch.matched = False
@@ -79,8 +75,7 @@ def run(username: str = "Player"):
 
     def back_to_menu():
         nonlocal manager
-        manager.transition(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h,
-                                     on_play=start_search))
+        manager.transition(MenuState(start_search, quit_game, layout.canvas_w, layout.canvas_h))
 
     def restart():
         # Same, already-authenticated connection — just search again.
@@ -88,8 +83,7 @@ def run(username: str = "Player"):
         game_over_watch.game_over = False
         manager.transition(SearchingState(bridge, layout.canvas_w, layout.canvas_h))
 
-    manager = StateManager(MenuState(start_game, quit_game, layout.canvas_w, layout.canvas_h,
-                                     on_play=start_search))
+    manager = StateManager(MenuState(start_search, quit_game, layout.canvas_w, layout.canvas_h))
 
     cell_size_ref = [cell_size]  # mutable container so on_mouse can read current value
 

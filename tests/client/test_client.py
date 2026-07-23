@@ -65,23 +65,23 @@ def test_label_init():
 
 
 def test_menu_state_clicks():
-    started = False
+    played = False
     quitted = False
 
-    def on_start():
-        nonlocal started
-        started = True
+    def on_play():
+        nonlocal played
+        played = True
 
     def on_quit():
         nonlocal quitted
         quitted = True
 
-    state = MenuState(on_start, on_quit, 800, 600)
-    
-    # Click start button (cx - 80, cy - 20) -> (320, 280)
+    state = MenuState(on_play, on_quit, 800, 600)
+
+    # Click play button (cx - 80, cy - 20) -> (320, 280)
     # Button is at x=320, y=280, w=160, h=45
     state.handle_input({"type": "click", "x": 350, "y": 290})
-    assert started
+    assert played
     assert not quitted
 
     # Click quit button (cx - 80, cy + 45) -> (320, 345)

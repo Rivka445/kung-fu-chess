@@ -7,16 +7,13 @@ from client.graphics.theme import GOLD
 
 
 class MenuState(UIState):
-    def __init__(self, on_start, on_quit, canvas_w: int, canvas_h: int, on_play=None):
+    def __init__(self, on_play, on_quit, canvas_w: int, canvas_h: int):
         cx = canvas_w // 2
         cy = canvas_h // 2
         self._title = Label(cx - 120, cy - 80, "KUNG-FU CHESS", scale=1.2, color=GOLD)
-        # Online (--ws) mode passes on_play and shows "Play" (ELO matchmaking);
-        # local hot-seat mode leaves on_play unset and shows "Start Game".
-        primary_label = "Play" if on_play is not None else "Start Game"
-        self._btn_primary = Button(cx - 80, cy - 20, 160, 45, primary_label)
+        self._btn_primary = Button(cx - 80, cy - 20, 160, 45, "Play")
         self._btn_quit    = Button(cx - 80, cy + 45, 160, 45, "Quit")
-        self._on_primary  = on_play if on_play is not None else on_start
+        self._on_primary  = on_play
         self._on_quit     = on_quit
 
         # Composite Pattern: Add components to a container
